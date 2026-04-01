@@ -6,7 +6,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: "https://e-commerce-rho-one-64.vercel.app",
+  origin: "https:/e-commerce-ashen-omega.vercel.app",
   credentials: true
 }));
 
