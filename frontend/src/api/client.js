@@ -1,9 +1,10 @@
-import axios from 'axios'
+import axios from "axios";
 
-const api = axios.create({
-  baseURL: '/api',
-  timeout: 15000,
-})
+const API = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+});
+
+export default API;
 
 // Attach JWT on every request
 api.interceptors.request.use((config) => {
@@ -31,4 +32,4 @@ api.interceptors.response.use(
   }
 )
 
-export default api
+// export default api
