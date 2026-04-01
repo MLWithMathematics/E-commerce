@@ -14,7 +14,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Static uploads
-const path = require('path') 
+
 app.use(express.static(path.join(__dirname, '../frontend/dist'))) 
 app.get('*', (req, res) => { 
 if (!req.path.startsWith('/api')) { 
