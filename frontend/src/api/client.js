@@ -1,28 +1,30 @@
-import axios from "axios";
+import axios from 'axios'
 
-const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-});
+// ── FIXED: single consistent variable name 'api' throughout ──
+// VITE_API_URL must be set in Vercel environment variables
+// e.g. https://your-railway-backend.up.railway.app/api
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || '/api',
+  timeout: 15000,
+})
 
-export default API;
-
-// Attach JWT on every request
+// ── Attach JWT on every request ───────────────────────────────
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('sv_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
-// Global 401 handler
-// IMPORTANT: Skip /auth/* routes so login/signup errors bubble up
-// to the component and show inline — not redirect away.
+// ── Global response handler ───────────────────────────────────
+// IMPORTANT: Skip /auth/* routes so login errors show inline
+// instead of redirecting away to /login
 api.interceptors.response.use(
   (res) => res,
   (err) => {
     const url = err.config?.url || ''
     const isAuthRoute = url.startsWith('/auth/')
     if (err.response?.status === 401 && !isAuthRoute) {
-      // Session expired on a protected route — clear and redirect
+      // Session expired on protected route — clear and redirect
       localStorage.removeItem('sv_token')
       localStorage.removeItem('sv_user')
       window.location.href = '/login'
@@ -32,4 +34,4 @@ api.interceptors.response.use(
   }
 )
 
-// export default api
+export default api
