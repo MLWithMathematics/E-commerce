@@ -19,20 +19,20 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-const authRoutes    = require('./routes/auth');
-const productRoutes = require('./routes/products');
-const orderRoutes   = require('./routes/orders');
-const { catRouter, payRouter, aboutRouter, cartRouter, dashRouter, reviewRouter } = require('./routes/misc');
+// const authRoutes    = require('./routes/auth');
+// const productRoutes = require('./routes/products');
+// const orderRoutes   = require('./routes/orders');
+// const { catRouter, payRouter, aboutRouter, cartRouter, dashRouter, reviewRouter } = require('./routes/misc');
 
-app.use('/api/auth',       authRoutes);
-app.use('/api/products',   productRoutes);
-app.use('/api/orders',     orderRoutes);
-app.use('/api/categories', catRouter);
-app.use('/api/payments',   payRouter);
-app.use('/api/about',      aboutRouter);
-app.use('/api/cart',       cartRouter);
-app.use('/api/dashboard',  dashRouter);
-app.use('/api/reviews',    reviewRouter);
+// app.use('/api/auth',       authRoutes);
+// app.use('/api/products',   productRoutes);
+// app.use('/api/orders',     orderRoutes);
+// app.use('/api/categories', catRouter);
+// app.use('/api/payments',   payRouter);
+// app.use('/api/about',      aboutRouter);
+// app.use('/api/cart',       cartRouter);
+// app.use('/api/dashboard',  dashRouter);
+// app.use('/api/reviews',    reviewRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {
