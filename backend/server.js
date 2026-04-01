@@ -5,7 +5,7 @@ const path    = require('path');
 
 const app = express();
 app.use(cors({
-  origin: "https://your-frontend.vercel.app",
+  origin: "https://e-commerce-rho-one-64.vercel.app/",
   credentials: true
 }));
 
