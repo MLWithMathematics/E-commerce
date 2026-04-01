@@ -5,11 +5,13 @@ const cors = require('cors');
 const app = express();
 
 app.get("/", (req, res) => {
+  console.log("Starting server...");
+  console.log("Root route hit"); 
   res.send("Backend is running 🚀");
 });
 // Middleware
 app.use(cors({
-  origin: "https:/e-commerce-ashen-omega.vercel.app",
+  origin: "https://e-commerce-ashen-omega.vercel.app",
   credentials: true
 }));
 
