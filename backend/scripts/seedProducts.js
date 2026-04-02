@@ -1,5 +1,7 @@
-require('dotenv').config({ path: '../.env' });
-const db = require('../config/db');
+import dotenv from 'dotenv';
+import db from '../config/db.js';
+
+dotenv.config({ path: '../.env' });
 
 const products = [
   // Electronics

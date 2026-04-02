@@ -1,7 +1,8 @@
-const express = require('express');
-const ctrl = require('../controllers/productController');
-const misc = require('../controllers/miscControllers');
-const { authenticate, requireAdmin } = require('../middleware/auth');
+import express from 'express';
+import * as ctrl from '../controllers/productController.js';
+import * as misc from '../controllers/miscControllers.js';
+import { authenticate, requireAdmin } from '../middleware/auth.js';
+
 const router = express.Router();
 
 // Public
@@ -15,4 +16,4 @@ router.post('/',    authenticate, requireAdmin, ctrl.createProduct);
 router.put('/:id',  authenticate, requireAdmin, ctrl.updateProduct);
 router.delete('/:id',authenticate, requireAdmin, ctrl.deleteProduct);
 
-module.exports = router;
+export default router;

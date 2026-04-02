@@ -1,8 +1,8 @@
-const jwt = require('jsonwebtoken');
-const db  = require('../config/db');
+import jwt from 'jsonwebtoken';
+import db from '../config/db.js';
 
 // ── Verify JWT ───────────────────────────────────────────────
-const authenticate = async (req, res, next) => {
+export const authenticate = async (req, res, next) => {
   try {
     const header = req.headers.authorization;
     if (!header || !header.startsWith('Bearer '))
@@ -25,16 +25,14 @@ const authenticate = async (req, res, next) => {
 };
 
 // ── Role Guards ──────────────────────────────────────────────
-const requireAdmin = (req, res, next) => {
+export const requireAdmin = (req, res, next) => {
   if (!['admin', 'seller'].includes(req.user?.role))
     return res.status(403).json({ message: 'Admin access required' });
   next();
 };
 
-const requireSuperAdmin = (req, res, next) => {
+export const requireSuperAdmin = (req, res, next) => {
   if (req.user?.role !== 'admin')
     return res.status(403).json({ message: 'Super-admin access required' });
   next();
 };
-
-module.exports = { authenticate, requireAdmin, requireSuperAdmin };

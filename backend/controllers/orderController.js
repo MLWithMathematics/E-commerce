@@ -1,12 +1,10 @@
-const db = require('../config/db');
+import db from '../config/db.js';
 
-// POST /api/orders
-exports.createOrder = async (req, res) => {
+export const createOrder = async (req, res) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
     const { items, shipping_address, notes, scheduled_date } = req.body;
-    // items: [{ product_id, quantity }]
 
     let total = 0;
     const enriched = [];
@@ -38,14 +36,12 @@ exports.createOrder = async (req, res) => {
       );
     }
 
-    // Create pending payment record
     await client.query(
       `INSERT INTO payments (order_id, user_id, amount, status, method)
        VALUES ($1,$2,$3,'pending',$4)`,
       [order.id, req.user.id, total, req.body.payment_method || 'card']
     );
 
-    // Clear cart
     await client.query('DELETE FROM cart_items WHERE user_id=$1', [req.user.id]);
 
     await client.query('COMMIT');
@@ -59,8 +55,7 @@ exports.createOrder = async (req, res) => {
   }
 };
 
-// GET /api/orders  (my orders)
-exports.getMyOrders = async (req, res) => {
+export const getMyOrders = async (req, res) => {
   try {
     const { status, page = 1, limit = 10 } = req.query;
     const offset = (parseInt(page)-1) * parseInt(limit);
@@ -91,8 +86,7 @@ exports.getMyOrders = async (req, res) => {
   }
 };
 
-// GET /api/orders/:id
-exports.getOrder = async (req, res) => {
+export const getOrder = async (req, res) => {
   try {
     const { rows } = await db.query(
       `SELECT o.*,
@@ -114,8 +108,7 @@ exports.getOrder = async (req, res) => {
   }
 };
 
-// PATCH /api/orders/:id/cancel
-exports.cancelOrder = async (req, res) => {
+export const cancelOrder = async (req, res) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
@@ -131,7 +124,6 @@ exports.cancelOrder = async (req, res) => {
     await client.query(
       "UPDATE orders SET status='cancelled', updated_at=NOW() WHERE id=$1", [order.id]
     );
-    // Restore stock
     const items = await client.query('SELECT * FROM order_items WHERE order_id=$1', [order.id]);
     for (const item of items.rows) {
       await client.query(
@@ -151,8 +143,7 @@ exports.cancelOrder = async (req, res) => {
   }
 };
 
-// PATCH /api/orders/:id/reschedule
-exports.rescheduleOrder = async (req, res) => {
+export const rescheduleOrder = async (req, res) => {
   const { scheduled_date } = req.body;
   try {
     const { rows } = await db.query(
@@ -166,14 +157,12 @@ exports.rescheduleOrder = async (req, res) => {
   }
 };
 
-// POST /api/orders/:id/reorder
-exports.reorder = async (req, res) => {
+export const reorder = async (req, res) => {
   try {
     const { rows: items } = await db.query(
       'SELECT product_id, quantity FROM order_items WHERE order_id=$1', [req.params.id]
     );
     if (!items.length) return res.status(404).json({ message: 'Order not found' });
-    // Add items to cart
     for (const item of items) {
       await db.query(
         `INSERT INTO cart_items (user_id, product_id, quantity) VALUES ($1,$2,$3)
@@ -187,10 +176,7 @@ exports.reorder = async (req, res) => {
   }
 };
 
-// ── Admin endpoints ───────────────────────────────────────────
-
-// GET /api/orders/admin/all
-exports.getAllOrders = async (req, res) => {
+export const getAllOrders = async (req, res) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
     const offset = (parseInt(page)-1) * parseInt(limit);
@@ -215,8 +201,7 @@ exports.getAllOrders = async (req, res) => {
   }
 };
 
-// PATCH /api/orders/admin/:id/status
-exports.updateOrderStatus = async (req, res) => {
+export const updateOrderStatus = async (req, res) => {
   const { status, tracking_number } = req.body;
   const validStatuses = ['pending','confirmed','processing','shipped','delivered','cancelled','refunded'];
   if (!validStatuses.includes(status))
@@ -239,8 +224,7 @@ exports.updateOrderStatus = async (req, res) => {
   }
 };
 
-// GET /api/orders/admin/stats
-exports.getOrderStats = async (req, res) => {
+export const getOrderStats = async (req, res) => {
   try {
     const [statusCounts, monthly, recent] = await Promise.all([
       db.query(`SELECT status, COUNT(*) as count, SUM(total) as revenue

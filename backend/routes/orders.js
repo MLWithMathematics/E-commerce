@@ -1,8 +1,8 @@
-// routes/orders.js
-const express = require('express');
-const ctrl = require('../controllers/orderController');
-const misc = require('../controllers/miscControllers');
-const { authenticate, requireAdmin } = require('../middleware/auth');
+import express from 'express';
+import * as ctrl from '../controllers/orderController.js';
+import * as misc from '../controllers/miscControllers.js';
+import { authenticate, requireAdmin } from '../middleware/auth.js';
+
 const router = express.Router();
 
 router.post('/',                   authenticate, ctrl.createOrder);
@@ -15,4 +15,4 @@ router.patch('/:id/reschedule',    authenticate, ctrl.rescheduleOrder);
 router.post('/:id/reorder',        authenticate, ctrl.reorder);
 router.patch('/admin/:id/status',  authenticate, requireAdmin, ctrl.updateOrderStatus);
 
-module.exports = router;
+export default router;

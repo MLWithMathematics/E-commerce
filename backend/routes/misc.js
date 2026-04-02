@@ -1,38 +1,38 @@
-// ── routes/categories.js ─────────────────────────────────────
-const express = require('express');
-const misc = require('../controllers/miscControllers');
-const { authenticate, requireAdmin } = require('../middleware/auth');
+import express from 'express';
+import * as misc from '../controllers/miscControllers.js';
+import { authenticate, requireAdmin } from '../middleware/auth.js';
+import db from '../config/db.js';
 
+// ── categories ─────────────────────────────────────
 const catRouter = express.Router();
 catRouter.get('/',    misc.getCategories);
 catRouter.post('/',   authenticate, requireAdmin, misc.createCategory);
 catRouter.put('/:id', authenticate, requireAdmin, misc.updateCategory);
 catRouter.delete('/:id', authenticate, requireAdmin, misc.deleteCategory);
 
-// ── routes/payments.js ───────────────────────────────────────
+// ── payments ───────────────────────────────────────
 const payRouter = express.Router();
 payRouter.get('/my',    authenticate, misc.getMyPayments);
 payRouter.get('/all',   authenticate, requireAdmin, misc.getAllPayments);
 payRouter.get('/stats', authenticate, requireAdmin, misc.getPaymentStats);
 
-// ── routes/about.js ──────────────────────────────────────────
+// ── about ──────────────────────────────────────────
 const aboutRouter = express.Router();
 aboutRouter.get('/',  misc.getAbout);
 aboutRouter.put('/',  authenticate, requireAdmin, misc.updateAbout);
 
-// ── routes/cart.js ───────────────────────────────────────────
+// ── cart ───────────────────────────────────────────
 const cartRouter = express.Router();
 cartRouter.get('/',    authenticate, misc.getCart);
 cartRouter.post('/',   authenticate, misc.upsertCartItem);
 cartRouter.delete('/', authenticate, misc.clearCart);
 
-// ── routes/dashboard.js ──────────────────────────────────────
+// ── dashboard ──────────────────────────────────────
 const dashRouter = express.Router();
 dashRouter.get('/customer', authenticate, misc.getCustomerStats);
 dashRouter.get('/admin',    authenticate, requireAdmin, misc.getAdminStats);
 
 // ── reviews (inline) ─────────────────────────────────────────
-const db = require('../config/db');
 const reviewRouter = express.Router();
 
 reviewRouter.post('/', authenticate, async (req, res) => {
@@ -69,4 +69,4 @@ reviewRouter.get('/product/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 });
 
-module.exports = { catRouter, payRouter, aboutRouter, cartRouter, dashRouter, reviewRouter };
+export { catRouter, payRouter, aboutRouter, cartRouter, dashRouter, reviewRouter };

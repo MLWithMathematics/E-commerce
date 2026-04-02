@@ -1,7 +1,6 @@
-const db = require('../config/db');
+import db from '../config/db.js';
 
-// GET /api/products  (public)
-exports.getProducts = async (req, res) => {
+export const getProducts = async (req, res) => {
   try {
     const { category, search, min_price, max_price, sort, page = 1, limit = 20, new_arrival, featured } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -49,8 +48,7 @@ exports.getProducts = async (req, res) => {
   }
 };
 
-// GET /api/products/:id
-exports.getProduct = async (req, res) => {
+export const getProduct = async (req, res) => {
   try {
     const { rows } = await db.query(
       `SELECT pr.*, c.name AS category_name
@@ -70,8 +68,7 @@ exports.getProduct = async (req, res) => {
   }
 };
 
-// POST /api/products  (admin/seller)
-exports.createProduct = async (req, res) => {
+export const createProduct = async (req, res) => {
   const { name, description, price, original_price, category_id, stock, image_url, images, tags, is_new_arrival, is_featured } = req.body;
   try {
     const { rows } = await db.query(
@@ -87,8 +84,7 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// PUT /api/products/:id  (admin/seller)
-exports.updateProduct = async (req, res) => {
+export const updateProduct = async (req, res) => {
   const { name, description, price, original_price, category_id, stock, image_url, images, tags, is_new_arrival, is_featured } = req.body;
   try {
     const { rows } = await db.query(
@@ -105,8 +101,7 @@ exports.updateProduct = async (req, res) => {
   }
 };
 
-// DELETE /api/products/:id  (admin)
-exports.deleteProduct = async (req, res) => {
+export const deleteProduct = async (req, res) => {
   try {
     const { rowCount } = await db.query('DELETE FROM products WHERE id=$1', [req.params.id]);
     if (!rowCount) return res.status(404).json({ message: 'Product not found' });
@@ -116,8 +111,7 @@ exports.deleteProduct = async (req, res) => {
   }
 };
 
-// GET /api/products/admin/inventory  (admin)
-exports.getInventory = async (req, res) => {
+export const getInventory = async (req, res) => {
   try {
     const { rows } = await db.query(
       `SELECT pr.id, pr.name, pr.stock, pr.price, c.name AS category, pr.updated_at
@@ -132,11 +126,9 @@ exports.getInventory = async (req, res) => {
   }
 };
 
-// GET /api/products/suggestions/:userId  (customer)
-exports.getSuggestions = async (req, res) => {
+export const getSuggestions = async (req, res) => {
   try {
     const userId = req.params.userId;
-    // Get categories from recent orders
     const { rows: cats } = await db.query(
       `SELECT DISTINCT p.category_id FROM orders o
        JOIN order_items oi ON o.id=oi.order_id

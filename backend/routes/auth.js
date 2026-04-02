@@ -1,8 +1,9 @@
-const express = require('express')
-const { body } = require('express-validator')
-const ctrl = require('../controllers/authController')
-const { authenticate } = require('../middleware/auth')
-const router = express.Router()
+import express from 'express';
+import { body } from 'express-validator';
+import * as ctrl from '../controllers/authController.js';
+import { authenticate } from '../middleware/auth.js';
+
+const router = express.Router();
 
 router.post('/signup', [
   body('name').trim().notEmpty().withMessage('Name is required'),
@@ -10,17 +11,17 @@ router.post('/signup', [
   // normalizeEmail() was transforming emails (e.g. Gmail dot-removal) causing login mismatch
   body('email').isEmail().withMessage('Invalid email address'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-], ctrl.signup)
+], ctrl.signup);
 
-router.post('/login', ctrl.login)
+router.post('/login', ctrl.login);
 
 // Email verification
-router.get('/verify-email', ctrl.verifyEmail)
-router.post('/resend-verification', ctrl.resendVerification)
+router.get('/verify-email', ctrl.verifyEmail);
+router.post('/resend-verification', ctrl.resendVerification);
 
 // Authenticated routes
-router.get('/me', authenticate, ctrl.getMe)
-router.put('/me', authenticate, ctrl.updateMe)
-router.put('/change-password', authenticate, ctrl.changePassword)
+router.get('/me', authenticate, ctrl.getMe);
+router.put('/me', authenticate, ctrl.updateMe);
+router.put('/change-password', authenticate, ctrl.changePassword);
 
-module.exports = router
+export default router;

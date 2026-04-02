@@ -1,7 +1,7 @@
-// ── categoryController.js ────────────────────────────────────
-const db = require('../config/db');
+import db from '../config/db.js';
 
-exports.getCategories = async (req, res) => {
+// ── categoryController ────────────────────────────────────
+export const getCategories = async (req, res) => {
   try {
     const { rows } = await db.query(
       `SELECT c.*, COUNT(p.id) AS product_count
@@ -12,7 +12,7 @@ exports.getCategories = async (req, res) => {
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 };
 
-exports.createCategory = async (req, res) => {
+export const createCategory = async (req, res) => {
   const { name, description, image_url } = req.body;
   try {
     const { rows } = await db.query(
@@ -23,7 +23,7 @@ exports.createCategory = async (req, res) => {
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 };
 
-exports.updateCategory = async (req, res) => {
+export const updateCategory = async (req, res) => {
   const { name, description, image_url } = req.body;
   try {
     const { rows } = await db.query(
@@ -34,16 +34,15 @@ exports.updateCategory = async (req, res) => {
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 };
 
-exports.deleteCategory = async (req, res) => {
+export const deleteCategory = async (req, res) => {
   try {
     await db.query('DELETE FROM categories WHERE id=$1', [req.params.id]);
     res.json({ message: 'Category deleted' });
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 };
 
-// ── paymentController.js ─────────────────────────────────────
-
-exports.getMyPayments = async (req, res) => {
+// ── paymentController ─────────────────────────────────────
+export const getMyPayments = async (req, res) => {
   try {
     const { rows } = await db.query(
       `SELECT p.*, o.status AS order_status FROM payments p
@@ -55,7 +54,7 @@ exports.getMyPayments = async (req, res) => {
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 };
 
-exports.getAllPayments = async (req, res) => {
+export const getAllPayments = async (req, res) => {
   try {
     const { status, method, page = 1, limit = 20 } = req.query;
     const offset = (parseInt(page)-1)*parseInt(limit);
@@ -81,7 +80,7 @@ exports.getAllPayments = async (req, res) => {
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 };
 
-exports.getPaymentStats = async (req, res) => {
+export const getPaymentStats = async (req, res) => {
   try {
     const [monthly, byMethod, byStatus] = await Promise.all([
       db.query(`SELECT DATE_TRUNC('month', created_at) AS month,
@@ -97,16 +96,15 @@ exports.getPaymentStats = async (req, res) => {
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 };
 
-// ── aboutController.js ───────────────────────────────────────
-
-exports.getAbout = async (req, res) => {
+// ── aboutController ───────────────────────────────────────
+export const getAbout = async (req, res) => {
   try {
     const { rows } = await db.query('SELECT * FROM about_content ORDER BY id');
     res.json(rows);
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 };
 
-exports.updateAbout = async (req, res) => {
+export const updateAbout = async (req, res) => {
   const { section, title, body, meta } = req.body;
   try {
     const { rows } = await db.query(
@@ -121,9 +119,8 @@ exports.updateAbout = async (req, res) => {
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 };
 
-// ── cartController.js ────────────────────────────────────────
-
-exports.getCart = async (req, res) => {
+// ── cartController ────────────────────────────────────────
+export const getCart = async (req, res) => {
   try {
     const { rows } = await db.query(
       `SELECT ci.*, p.name, p.price, p.image_url, p.stock
@@ -136,7 +133,7 @@ exports.getCart = async (req, res) => {
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 };
 
-exports.upsertCartItem = async (req, res) => {
+export const upsertCartItem = async (req, res) => {
   const { product_id, quantity } = req.body;
   try {
     if (quantity <= 0) {
@@ -152,7 +149,7 @@ exports.upsertCartItem = async (req, res) => {
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 };
 
-exports.clearCart = async (req, res) => {
+export const clearCart = async (req, res) => {
   try {
     await db.query('DELETE FROM cart_items WHERE user_id=$1', [req.user.id]);
     res.json({ message: 'Cart cleared' });
@@ -160,8 +157,7 @@ exports.clearCart = async (req, res) => {
 };
 
 // ── customerDashboard ────────────────────────────────────────
-
-exports.getCustomerStats = async (req, res) => {
+export const getCustomerStats = async (req, res) => {
   try {
     const uid = req.user.id;
     const [summary, monthly, recent, suggestions] = await Promise.all([
@@ -191,8 +187,7 @@ exports.getCustomerStats = async (req, res) => {
 };
 
 // ── adminDashboard ───────────────────────────────────────────
-
-exports.getAdminStats = async (req, res) => {
+export const getAdminStats = async (req, res) => {
   try {
     const [users, orders, revenue, products, topProducts] = await Promise.all([
       db.query(`SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE role='customer') AS customers,
@@ -217,27 +212,4 @@ exports.getAdminStats = async (req, res) => {
       top_products: topProducts.rows,
     });
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
-};
-
-// re-export for routing
-module.exports = {
-  // category
-  getCategories: exports.getCategories,
-  createCategory: exports.createCategory,
-  updateCategory: exports.updateCategory,
-  deleteCategory: exports.deleteCategory,
-  // payment
-  getMyPayments: exports.getMyPayments,
-  getAllPayments: exports.getAllPayments,
-  getPaymentStats: exports.getPaymentStats,
-  // about
-  getAbout: exports.getAbout,
-  updateAbout: exports.updateAbout,
-  // cart
-  getCart: exports.getCart,
-  upsertCartItem: exports.upsertCartItem,
-  clearCart: exports.clearCart,
-  // stats
-  getCustomerStats: exports.getCustomerStats,
-  getAdminStats: exports.getAdminStats,
 };
