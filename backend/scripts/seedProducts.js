@@ -6,6 +6,16 @@ dotenv.config({ path: '../.env' });
 // 2. Import the database dynamically AFTER the variables are loaded
 const { default: db } = await import('../config/db.js');
 
+// ── ADDED: Seed Categories First ──
+const categories = [
+  { id: 1, name: 'Electronics', description: 'Tech gadgets and accessories' },
+  { id: 2, name: 'Fashion', description: 'Clothing, shoes, and apparel' },
+  { id: 3, name: 'Home & Living', description: 'Furniture and home decor' },
+  { id: 4, name: 'Sports', description: 'Fitness and outdoor gear' },
+  { id: 5, name: 'Books', description: 'Fiction and non-fiction books' },
+  { id: 6, name: 'Beauty', description: 'Skincare and cosmetics' },
+];
+
 const products = [
   // Electronics
   { name:'Apple iPhone 15 Pro', description:'6.1" Super Retina XDR display, A17 Pro chip, 48MP camera system', price:999, original_price:1099, category_id:1, stock:50, image_url:'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=400', is_new_arrival:true, is_featured:true, rating:4.8, review_count:342 },
@@ -30,6 +40,17 @@ const products = [
 
 (async () => {
   try {
+    console.log('Seeding categories...');
+    for (const c of categories) {
+      await db.query(
+        `INSERT INTO categories (id, name, description)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (id) DO NOTHING`,
+        [c.id, c.name, c.description]
+      );
+    }
+    console.log(`✅  ${categories.length} categories seeded`);
+
     console.log('Seeding products...');
     for (const p of products) {
       await db.query(
