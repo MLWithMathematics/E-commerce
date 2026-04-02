@@ -3,9 +3,7 @@ const { Pool } = pkg;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+
 });
 
 // ── ADD THIS: Test the connection on startup ──
