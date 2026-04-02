@@ -1,7 +1,10 @@
 import dotenv from 'dotenv';
-import db from '../config/db.js';
 
+// 1. Load the environment variables FIRST
 dotenv.config({ path: '../.env' });
+
+// 2. Import the database dynamically AFTER the variables are loaded
+const { default: db } = await import('../config/db.js');
 
 const products = [
   // Electronics
