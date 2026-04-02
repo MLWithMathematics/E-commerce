@@ -4,10 +4,9 @@
   "description": "WipSom E-Commerce App",
   "scripts": {
     "start": "node backend/server.js",
-    "install-backend": "cd backend && npm install",
-    "build": "echo 'Backend only build — frontend built separately on Vercel'"
+    "build": "echo 'Frontend built separately on Vercel'"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "18.x"
   }
 }
