@@ -1,7 +1,20 @@
-require('dotenv').config();
-const express = require('express');
-const cors    = require('cors');
-const path    = require('path');
+import dotenv from 'dotenv';
+import express from 'express';
+import cors from 'cors';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+// ── Local Route Imports (Must include .js extension) ──────────
+import authRoutes from './routes/auth.js';
+import productRoutes from './routes/products.js';
+import orderRoutes from './routes/orders.js';
+import { catRouter, payRouter, aboutRouter, cartRouter, dashRouter, reviewRouter } from './routes/misc.js';
+
+dotenv.config();
+
+// Recreate __dirname for ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 
@@ -21,11 +34,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ── Routes ────────────────────────────────────────────────────
-const authRoutes    = require('./routes/auth');
-const productRoutes = require('./routes/products');
-const orderRoutes   = require('./routes/orders');
-const { catRouter, payRouter, aboutRouter, cartRouter, dashRouter, reviewRouter } = require('./routes/misc');
-
 app.use('/api/auth',       authRoutes);
 app.use('/api/products',   productRoutes);
 app.use('/api/orders',     orderRoutes);
