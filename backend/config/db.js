@@ -1,10 +1,15 @@
+import dns from 'dns';
 import pkg from 'pg';
+
+// 👇 FIX: Force Node.js to use IPv4 to prevent ECONNRESET
+dns.setDefaultResultOrder('ipv4first');
+
 const { Pool } = pkg;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  // 👇 Neon requires SSL regardless of environment
   ssl: { rejectUnauthorized: false }, 
+  connectionTimeoutMillis: 10000, // Fails gracefully after 10s instead of hanging
 });
 
 // Test the connection on startup

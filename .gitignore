@@ -15,7 +15,7 @@ frontend/dist/
 # Logs
 *.log
 npm-debug.log*
-
+backend/env.txt
 # Uploads (user-uploaded files, not code)
 backend/uploads/*
 !backend/uploads/.gitkeep
