@@ -10,7 +10,7 @@
 | Service | URL |
 |---------|-----|
 | **Frontend** | https://e-commerce-ashen-omega.vercel.app |
-| **Backend API** | https://your-railway-url.up.railway.app/api/health |
+| **Backend API** |https://web-production-0ae8ea.up.railway.app |
 
 **Demo Admin Login:**
 - Email: `admin@wipsom.com`
