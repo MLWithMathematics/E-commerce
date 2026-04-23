@@ -4,7 +4,7 @@ backend/node_modules/
 frontend/node_modules/
 
 # Environment files — set these in Railway/Vercel dashboards
-.env
+frontend/.env
 .env.local
 .env.production
 
@@ -22,3 +22,10 @@ backend/uploads/*
 # OS files
 .DS_Store
 Thumbs.db
+graphify-out
+Summary-Claude
+.agent
+.Claude
+.graphifyignore
+CLAUDE.md 
+Summary-Claude.txt
