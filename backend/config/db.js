@@ -3,11 +3,11 @@ const { Pool } = pkg;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  // 👇 Turn SSL ON in production (Railway), but OFF locally
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  // 👇 Neon requires SSL regardless of environment
+  ssl: { rejectUnauthorized: false }, 
 });
 
-// ── ADD THIS: Test the connection on startup ──
+// Test the connection on startup
 pool.connect((err, client, release) => {
   if (err) {
     console.error('❌ Database connection error:', err.message);
@@ -16,4 +16,5 @@ pool.connect((err, client, release) => {
     release();
   }
 });
+
 export default pool;
