@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
 import productRoutes from './routes/products.js';
 import orderRoutes from './routes/orders.js';
-import { catRouter, payRouter, aboutRouter, cartRouter, dashRouter, reviewRouter } from './routes/misc.js';
+import { catRouter, payRouter, aboutRouter, cartRouter, dashRouter, reviewRouter, shippingRouter } from './routes/misc.js';
 
 dotenv.config();
 
@@ -19,10 +19,24 @@ const __dirname = dirname(__filename);
 const app = express();
 
 // ── CORS ─────────────────────────────────────────────────────
-// Reads CLIENT_URL from Railway environment variables
-const allowedOrigin = process.env.CLIENT_URL || 'http://localhost:5173';
+// Reads CLIENT_URL from Render environment variables
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5174',
+  process.env.CLIENT_URL // This will pull the Vercel URL you added to Render
+].filter(Boolean); // Safely ignores CLIENT_URL if it is undefined locally
+
 app.use(cors({
-  origin: allowedOrigin,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, or Postman)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('The CORS policy for this site does not allow access from the specified Origin.'));
+    }
+  },
   credentials: true,
 }));
 
@@ -43,6 +57,7 @@ app.use('/api/about',      aboutRouter);
 app.use('/api/cart',       cartRouter);
 app.use('/api/dashboard',  dashRouter);
 app.use('/api/reviews',    reviewRouter);
+app.use('/api/shipping',   shippingRouter);
 
 // ── Health check ─────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
@@ -68,10 +83,11 @@ app.use((err, req, res, next) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────
-// Railway sets PORT automatically — must bind to 0.0.0.0
+// Render sets PORT automatically — must bind to 0.0.0.0
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅  WipSom API running on port ${PORT}`);
-  console.log(`    CORS allowed origin: ${allowedOrigin}`);
-  console.log(`    NODE_ENV: ${process.env.NODE_ENV}`);
+  // FIXED: Changed from undefined variable to safely logging the array
+  console.log(`🌐  CORS allowed origins: ${allowedOrigins.join(', ')}`);
+  console.log(`⚙️   NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
 });

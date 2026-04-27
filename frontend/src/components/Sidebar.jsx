@@ -1,29 +1,26 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, ShoppingBag, Sparkles, User, Package,
-  ShoppingCart, BarChart3, Tags, CreditCard, Settings,
-  LogOut, ChevronRight, Package2
+  LayoutDashboard, ShoppingBag, Sparkles, User,
+  ShoppingCart, CreditCard, LogOut, ChevronRight, Package2, Package
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
+// Fix 5: Removed 'Categories' from customer nav
 const customerNav = [
   { icon: LayoutDashboard, label: 'Dashboard',    to: '/dashboard' },
-  { icon: Tags,            label: 'Categories',   to: '/products' },
   { icon: Sparkles,        label: 'New Arrivals', to: '/products?new_arrival=true' },
   { icon: ShoppingBag,     label: 'My Orders',    to: '/orders' },
   { icon: ShoppingCart,    label: 'Cart',         to: '/cart' },
   { icon: User,            label: 'Profile',      to: '/profile' },
 ]
 
+// Analytics entry removed — no standalone page exists; charts live in Overview
 const adminNav = [
-  { icon: LayoutDashboard, label: 'Overview',     to: '/admin/dashboard' },
-  { icon: Package,         label: 'Products',     to: '/admin/products' },
-  { icon: Tags,            label: 'Categories',   to: '/admin/categories' },
-  { icon: ShoppingBag,     label: 'Orders',       to: '/admin/orders' },
-  { icon: Package2,        label: 'Inventory',    to: '/admin/inventory' },
-  { icon: CreditCard,      label: 'Payments',     to: '/admin/payments' },
-  { icon: BarChart3,       label: 'Analytics',    to: '/admin/analytics' },
-  { icon: Settings,        label: 'About Page',   to: '/admin/about' },
+  { icon: LayoutDashboard, label: 'Overview',  to: '/admin/dashboard' },
+  { icon: Package,         label: 'Products',  to: '/admin/products' },
+  { icon: ShoppingBag,     label: 'Orders',    to: '/admin/orders' },
+  { icon: Package2,        label: 'Inventory', to: '/admin/inventory' },
+  { icon: CreditCard,      label: 'Payments',  to: '/admin/payments' },
 ]
 
 export default function Sidebar({ collapsed = false }) {
@@ -35,13 +32,18 @@ export default function Sidebar({ collapsed = false }) {
 
   return (
     <aside className={`${collapsed ? 'w-16' : 'w-56'} shrink-0 bg-white border-r border-gray-100 flex flex-col h-full transition-all duration-300`}>
-      {/* Logo */}
-      <div className={`flex items-center gap-3 px-4 py-5 border-b border-gray-100 ${collapsed ? 'justify-center' : ''}`}>
+
+      {/* Fix 4: Logo is now a Link → homepage */}
+      <Link
+        to="/"
+        className={`flex items-center gap-3 px-4 py-5 border-b border-gray-100 hover:bg-gray-50 transition-colors ${collapsed ? 'justify-center' : ''}`}
+        title="Go to homepage"
+      >
         <div className="w-8 h-8 bg-[#1a1f2e] rounded-xl flex items-center justify-center shrink-0">
           <Package2 size={16} className="text-[#f59e0b]" />
         </div>
         {!collapsed && <span className="font-display font-bold text-[#1a1f2e] text-base">WipSom</span>}
-      </div>
+      </Link>
 
       {/* Role badge */}
       {!collapsed && (
@@ -58,7 +60,7 @@ export default function Sidebar({ collapsed = false }) {
           const active = location.pathname === to ||
             (to !== '/' && location.pathname.startsWith(to.split('?')[0]) && !to.includes('?'))
           return (
-            <Link key={to} to={to} title={collapsed ? label : ''}
+            <Link key={`${to}-${label}`} to={to} title={collapsed ? label : ''}
               className={`nav-item ${active ? 'active' : ''} ${collapsed ? 'justify-center px-2' : ''}`}>
               <Icon size={17} className="shrink-0" />
               {!collapsed && <span className="flex-1">{label}</span>}

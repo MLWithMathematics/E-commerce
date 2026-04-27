@@ -62,7 +62,7 @@ export default function CustomerDashboard() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
         <KpiCard icon={ShoppingBag}   label="Total Orders"   value={summary?.total_orders || 0}    color="bg-blue-50 text-blue-600" />
-        <KpiCard icon={DollarSign}    label="Total Spent"    value={`$${parseFloat(summary?.total_spent||0).toFixed(0)}`} color="bg-[#f59e0b]/10 text-[#f59e0b]" />
+        <KpiCard icon={DollarSign}    label="Total Spent"    value={`₹${parseFloat(summary?.total_spent||0).toLocaleString('en-IN')}`} color="bg-[#f59e0b]/10 text-[#f59e0b]" />
         <KpiCard icon={CheckCircle}   label="Delivered"      value={summary?.completed || 0}        color="bg-green-50 text-green-600" />
         <KpiCard icon={Clock}         label="Active Orders"  value={summary?.active || 0}            color="bg-purple-50 text-purple-600" />
       </div>
@@ -77,8 +77,8 @@ export default function CustomerDashboard() {
               <BarChart data={spendingData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f1" />
                 <XAxis dataKey="month" tick={{fontSize:11}} axisLine={false} tickLine={false} />
-                <YAxis tick={{fontSize:11}} axisLine={false} tickLine={false} tickFormatter={v=>`$${v}`} />
-                <Tooltip formatter={v=>`$${v.toFixed(2)}`} contentStyle={{borderRadius:12,border:'1px solid #e5e7eb'}} />
+                <YAxis tick={{fontSize:11}} axisLine={false} tickLine={false} tickFormatter={v=>`₹${v.toLocaleString('en-IN')}`} />
+                <Tooltip formatter={v=>`₹${v.toLocaleString('en-IN')}`} contentStyle={{borderRadius:12,border:'1px solid #e5e7eb'}} />
                 <Bar dataKey="spent" fill="#f59e0b" radius={[6,6,0,0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -141,7 +141,7 @@ export default function CustomerDashboard() {
                     <td className="font-mono text-xs text-[#6b7280]">#{o.id}</td>
                     <td className="text-sm font-medium max-w-[160px] truncate">{o.first_product || '—'}</td>
                     <td><StatusBadge status={o.status} /></td>
-                    <td className="font-semibold text-sm">${parseFloat(o.total).toFixed(2)}</td>
+                    <td className="font-semibold text-sm">₹{parseFloat(o.total).toLocaleString('en-IN')}</td>
                     <td className="text-xs text-[#6b7280]">{format(new Date(o.created_at), 'MMM d, yyyy')}</td>
                   </tr>
                 ))}
@@ -164,7 +164,7 @@ export default function CustomerDashboard() {
                 <img src={p.image_url} alt={p.name} className="w-full h-32 object-cover" />
                 <div className="p-3">
                   <p className="text-xs font-medium line-clamp-1">{p.name}</p>
-                  <p className="text-sm font-bold text-[#f59e0b] mt-0.5">${parseFloat(p.price).toFixed(2)}</p>
+                  <p className="text-sm font-bold text-[#f59e0b] mt-0.5">₹{parseFloat(p.price).toLocaleString('en-IN')}</p>
                 </div>
               </Link>
             ))}

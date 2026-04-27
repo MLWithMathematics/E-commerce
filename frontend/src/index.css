@@ -4,23 +4,26 @@
 
 @layer base {
   :root {
-    --clr-primary:   #1a1f2e;
-    --clr-primary-l: #2d3448;
-    --clr-accent:    #f59e0b;
-    --clr-accent-d:  #d97706;
-    --clr-bg:        #f8f7f4;
-    --clr-surface:   #ffffff;
-    --clr-text:      #1a1f2e;
-    --clr-muted:     #6b7280;
-    --clr-border:    #e5e7eb;
-    --radius:        12px;
-    --shadow-card:   0 4px 24px rgba(0,0,0,0.08);
+    --clr-primary:    #1e3a6e;
+    --clr-primary-l:  #2d5186;
+    --clr-accent:     #f59e0b;
+    --clr-accent-d:   #d97706;
+    --clr-blue:       #3b82f6;
+    --clr-blue-dark:  #1d4ed8;
+    --clr-blue-glow:  rgba(59,130,246,0.18);
+    --clr-bg:         #f0f6ff;
+    --clr-surface:    #ffffff;
+    --clr-text:       #1e3a6e;
+    --clr-muted:      #64748b;
+    --clr-border:     #dbeafe;
+    --radius:         12px;
+    --shadow-card:    0 4px 24px rgba(30,58,110,0.08);
   }
 
   html { scroll-behavior: smooth; }
 
   body {
-    @apply bg-[#f8f7f4] text-[#1a1f2e] font-body antialiased;
+    @apply bg-[#f0f6ff] text-[#1e3a6e] font-body antialiased;
     font-size: 15px;
   }
 
@@ -37,17 +40,18 @@
 @layer components {
   /* ── Cards ── */
   .card {
-    @apply bg-white rounded-2xl shadow-card p-5 transition-all duration-300;
+    @apply bg-white rounded-2xl shadow-card p-5 transition-all duration-300 border border-blue-50;
   }
   .card-hover {
-    @apply card hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,0,0.12)];
+    @apply card hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(30,58,110,0.14)] hover:border-blue-200;
   }
 
   /* ── Buttons ── */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl
-           bg-[#1a1f2e] text-white font-medium text-sm
-           hover:bg-[#2d3448] active:scale-95 transition-all duration-200;
+           bg-gradient-to-r from-[#1e3a6e] to-[#2d5186] text-white font-medium text-sm
+           hover:from-[#2d5186] hover:to-[#3b82f6] active:scale-95 transition-all duration-200
+           shadow-[0_2px_8px_rgba(30,58,110,0.25)];
   }
   .btn-accent {
     @apply inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl
@@ -56,12 +60,12 @@
   }
   .btn-outline {
     @apply inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl
-           border-2 border-[#1a1f2e] text-[#1a1f2e] font-medium text-sm
-           hover:bg-[#1a1f2e] hover:text-white active:scale-95 transition-all duration-200;
+           border-2 border-[#1e3a6e] text-[#1e3a6e] font-medium text-sm
+           hover:bg-[#1e3a6e] hover:text-white active:scale-95 transition-all duration-200;
   }
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl
-           text-[#6b7280] hover:bg-gray-100 active:scale-95 transition-all duration-200;
+           text-[#64748b] hover:bg-blue-50 hover:text-[#1e3a6e] active:scale-95 transition-all duration-200;
   }
   .btn-danger {
     @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl
@@ -71,9 +75,9 @@
 
   /* ── Inputs ── */
   .input {
-    @apply w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white
-           text-[#1a1f2e] text-sm placeholder:text-gray-400
-           focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40 focus:border-[#f59e0b]
+    @apply w-full px-4 py-2.5 rounded-xl border border-blue-100 bg-white
+           text-[#1e3a6e] text-sm placeholder:text-blue-300
+           focus:outline-none focus:ring-2 focus:ring-[#3b82f6]/30 focus:border-[#3b82f6]
            transition-all duration-200;
   }
   .label {
@@ -113,10 +117,10 @@
   /* ── Sidebar nav ── */
   .nav-item {
     @apply flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium
-           text-[#6b7280] hover:bg-[#f8f7f4] hover:text-[#1a1f2e] transition-all duration-200 cursor-pointer;
+           text-[#64748b] hover:bg-blue-50 hover:text-[#1e3a6e] transition-all duration-200 cursor-pointer;
   }
   .nav-item.active {
-    @apply bg-[#1a1f2e] text-white;
+    @apply bg-gradient-to-r from-[#1e3a6e] to-[#2d5186] text-white shadow-[0_2px_8px_rgba(30,58,110,0.3)];
   }
 
   /* ── Product card ── */

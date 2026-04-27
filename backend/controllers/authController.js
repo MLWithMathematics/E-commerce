@@ -19,14 +19,26 @@ let transporter = null;
 const getTransporter = async () => {
   if (transporter) return transporter;
   try {
-    const t = nodemailer.createTransport({
-      host:   process.env.SMTP_HOST,
-      port:   parseInt(process.env.SMTP_PORT) || 587,
-      secure: process.env.SMTP_SECURE === 'true',
-      auth:   { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    });
+    // If BREVO_SMTP_KEY is set, use Brevo (300 free emails/day).
+    // Otherwise fall back to the existing SMTP_* env vars.
+    const useBrevo = !!process.env.BREVO_SMTP_KEY;
+    const t = nodemailer.createTransport(
+      useBrevo
+        ? {
+            host: 'smtp-relay.brevo.com',
+            port: 587,
+            auth: { user: process.env.BREVO_LOGIN, pass: process.env.BREVO_SMTP_KEY },
+          }
+        : {
+            host:   process.env.SMTP_HOST,
+            port:   parseInt(process.env.SMTP_PORT) || 587,
+            secure: process.env.SMTP_SECURE === 'true',
+            auth:   { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+          }
+    );
     await t.verify();
     transporter = t;
+    if (useBrevo) console.log('✅  Brevo SMTP transporter ready');
     return transporter;
   } catch {
     return null;

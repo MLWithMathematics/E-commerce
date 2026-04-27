@@ -17,6 +17,23 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true)
   const [qty, setQty] = useState(1)
   const [selectedImg, setSelectedImg] = useState(0)
+  const [pin, setPin] = useState('')
+  const [etd, setEtd] = useState(null)
+  const [etdLoading, setEtdLoading] = useState(false)
+
+  const checkDelivery = async () => {
+    if (pin.length !== 6) return
+    setEtdLoading(true)
+    setEtd(null)
+    try {
+      const res = await api.get(`/shipping/estimate?pincode=${pin}`)
+      setEtd(res.data)
+    } catch {
+      setEtd({ error: 'Could not fetch delivery info' })
+    } finally {
+      setEtdLoading(false)
+    }
+  }
 
   useEffect(() => {
     api.get(`/products/${id}`)
@@ -95,6 +112,39 @@ export default function ProductDetailPage() {
               <span className="text-xs bg-gray-100 text-[#6b7280] px-3 py-1 rounded-full">{product.category_name}</span>
             </div>
           )}
+
+          {/* Delivery estimate */}
+          <div className="rounded-xl border border-gray-200 p-4 space-y-2.5">
+            <p className="text-sm font-medium text-[#1a1f2e]">Check delivery to your pincode</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="e.g. 110001"
+                value={pin}
+                onChange={e => { setPin(e.target.value.replace(/\D/g,'')); setEtd(null) }}
+                onKeyDown={e => e.key==='Enter' && checkDelivery()}
+                className="border border-gray-200 rounded-xl px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30"
+              />
+              <button
+                onClick={checkDelivery}
+                disabled={pin.length!==6 || etdLoading}
+                className="btn-accent text-sm px-4 py-2 disabled:opacity-50"
+              >
+                {etdLoading ? 'Checking…' : 'Check'}
+              </button>
+            </div>
+            {etd && !etd.error && (
+              <p className="text-sm text-green-700 flex items-center gap-1.5">
+                <span className="w-2 h-2 bg-green-500 rounded-full inline-block" />
+                Delivery by <strong>{etd.etd}</strong> via {etd.courier}
+              </p>
+            )}
+            {etd?.error && (
+              <p className="text-sm text-red-500">{etd.error}</p>
+            )}
+          </div>
 
           {/* Qty + Add to Cart */}
           {product.stock > 0 && (

@@ -54,7 +54,7 @@ export function AdminOrders() {
                       <td className="font-mono text-xs text-[#6b7280]">#{o.id}</td>
                       <td><p className="text-sm font-medium">{o.customer_name}</p><p className="text-xs text-[#6b7280]">{o.customer_email}</p></td>
                       <td><StatusBadge status={o.status} /></td>
-                      <td className="font-semibold text-sm">${parseFloat(o.total).toFixed(2)}</td>
+                      <td className="font-semibold text-sm">₹{parseFloat(o.total).toLocaleString('en-IN')}</td>
                       <td className="text-xs text-[#6b7280]">{format(new Date(o.created_at),'MMM d, yyyy')}</td>
                       <td>
                         <select className="input text-xs py-1 w-36" value={o.status} onChange={e=>updateStatus(o.id,e.target.value)}>
@@ -110,7 +110,7 @@ export function AdminInventory() {
                   <td className="font-medium text-sm">{p.name}</td>
                   <td className="text-sm text-[#6b7280]">{p.category||'—'}</td>
                   <td><span className={`font-bold text-sm ${p.stock===0?'text-red-500':p.stock<=5?'text-orange-500':'text-green-600'}`}>{p.stock===0?'OUT':p.stock}</span></td>
-                  <td className="text-sm">${parseFloat(p.price).toFixed(2)}</td>
+                  <td className="text-sm">₹{parseFloat(p.price).toLocaleString('en-IN')}</td>
                   <td className="text-xs text-[#6b7280]">{format(new Date(p.updated_at),'MMM d, yyyy')}</td>
                 </tr>
               ))}
@@ -136,7 +136,7 @@ export function AdminPayments() {
     <div className="space-y-5 anim-fade-up">
       <h1 className="page-title">Payments</h1>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[['Total Received',`$${parseFloat(data.stats.total_received||0).toFixed(2)}`,'text-green-600'],['Pending',`$${parseFloat(data.stats.total_pending||0).toFixed(2)}`,'text-[#f59e0b]'],['Transactions',data.stats.total_transactions||0,'text-[#1a1f2e]']].map(([l,v,c])=>(
+        {[['Total Received',`₹${parseFloat(data.stats.total_received||0).toLocaleString('en-IN')}`,'text-green-600'],['Pending',`₹${parseFloat(data.stats.total_pending||0).toLocaleString('en-IN')}`,'text-[#f59e0b]'],['Transactions',data.stats.total_transactions||0,'text-[#1a1f2e]']].map(([l,v,c])=>(
           <div key={l} className="stat-card"><p className={`text-2xl font-bold font-display ${c}`}>{v}</p><p className="text-xs text-[#6b7280]">{l}</p></div>
         ))}
       </div>
@@ -150,7 +150,7 @@ export function AdminPayments() {
                   <td className="font-mono text-xs text-[#6b7280]">#{p.id}</td>
                   <td><p className="text-sm font-medium">{p.customer_name}</p><p className="text-xs text-[#6b7280]">{p.customer_email}</p></td>
                   <td className="font-mono text-xs">#{p.order_id}</td>
-                  <td className="font-semibold text-sm">${parseFloat(p.amount).toFixed(2)}</td>
+                  <td className="font-semibold text-sm">₹{parseFloat(p.amount).toLocaleString('en-IN')}</td>
                   <td className="text-xs capitalize">{p.method}</td>
                   <td><StatusBadge status={p.status}/></td>
                   <td className="text-xs text-[#6b7280]">{format(new Date(p.created_at),'MMM d, yyyy')}</td>

@@ -1,8 +1,17 @@
 import db from '../config/db.js';
 
+// ── helpers ───────────────────────────────────────────────────────────────────
+// superAdmin sees everything; admin/seller only sees their own data
+const isSuperAdmin = (user) => user?.role === 'superAdmin';
+
+// ── getProducts ───────────────────────────────────────────────────────────────
 export const getProducts = async (req, res) => {
   try {
-    const { category, search, min_price, max_price, sort, page = 1, limit = 20, new_arrival, featured } = req.query;
+    const {
+      category, search, min_price, max_price, sort,
+      page = 1, limit = 20, new_arrival, featured,
+    } = req.query;
+
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const conditions = [];
     const params = [];
@@ -16,7 +25,6 @@ export const getProducts = async (req, res) => {
     if (featured)    { conditions.push(`pr.is_featured = true`); }
 
     const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
-
     let orderBy = 'pr.created_at DESC';
     if (sort === 'price_asc')  orderBy = 'pr.price ASC';
     if (sort === 'price_desc') orderBy = 'pr.price DESC';
@@ -48,6 +56,7 @@ export const getProducts = async (req, res) => {
   }
 };
 
+// ── getProduct ────────────────────────────────────────────────────────────────
 export const getProduct = async (req, res) => {
   try {
     const { rows } = await db.query(
@@ -68,14 +77,24 @@ export const getProduct = async (req, res) => {
   }
 };
 
+// ── createProduct — Fix 7: tag product with seller_id ────────────────────────
 export const createProduct = async (req, res) => {
-  const { name, description, price, original_price, category_id, stock, image_url, images, tags, is_new_arrival, is_featured } = req.body;
+  const {
+    name, description, price, original_price, category_id,
+    stock, image_url, images, tags, is_new_arrival, is_featured,
+  } = req.body;
   try {
     const { rows } = await db.query(
-      `INSERT INTO products (name,description,price,original_price,category_id,stock,image_url,images,tags,is_new_arrival,is_featured)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-      [name, description, price, original_price, category_id, stock,
-       image_url, images, tags, is_new_arrival || false, is_featured || false]
+      `INSERT INTO products
+         (name, description, price, original_price, category_id, stock,
+          image_url, images, tags, is_new_arrival, is_featured, seller_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+      [
+        name, description, price, original_price, category_id, stock,
+        image_url, images, tags,
+        is_new_arrival || false, is_featured || false,
+        req.user.id,   // ← seller_id
+      ]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -84,41 +103,75 @@ export const createProduct = async (req, res) => {
   }
 };
 
+// ── updateProduct — Fix 7: seller can only edit their own products ────────────
 export const updateProduct = async (req, res) => {
-  const { name, description, price, original_price, category_id, stock, image_url, images, tags, is_new_arrival, is_featured } = req.body;
+  const {
+    name, description, price, original_price, category_id,
+    stock, image_url, images, tags, is_new_arrival, is_featured,
+  } = req.body;
   try {
+    // superAdmin can edit any product; seller can only edit their own
+    const ownerClause = isSuperAdmin(req.user)
+      ? `WHERE id=$12`
+      : `WHERE id=$12 AND seller_id=$13`;
+    const queryParams = [
+      name, description, price, original_price, category_id, stock,
+      image_url, images, tags, is_new_arrival, is_featured,
+      req.params.id,
+    ];
+    if (!isSuperAdmin(req.user)) queryParams.push(req.user.id);
+
     const { rows } = await db.query(
-      `UPDATE products SET name=$1,description=$2,price=$3,original_price=$4,category_id=$5,
-       stock=$6,image_url=$7,images=$8,tags=$9,is_new_arrival=$10,is_featured=$11,updated_at=NOW()
-       WHERE id=$12 RETURNING *`,
-      [name, description, price, original_price, category_id, stock,
-       image_url, images, tags, is_new_arrival, is_featured, req.params.id]
+      `UPDATE products SET
+         name=$1, description=$2, price=$3, original_price=$4,
+         category_id=$5, stock=$6, image_url=$7, images=$8, tags=$9,
+         is_new_arrival=$10, is_featured=$11, updated_at=NOW()
+       ${ownerClause} RETURNING *`,
+      queryParams
     );
-    if (!rows.length) return res.status(404).json({ message: 'Product not found' });
+    if (!rows.length)
+      return res.status(404).json({ message: 'Product not found or not yours' });
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
 };
 
+// ── deleteProduct — Fix 7: seller can only delete their own products ──────────
 export const deleteProduct = async (req, res) => {
   try {
-    const { rowCount } = await db.query('DELETE FROM products WHERE id=$1', [req.params.id]);
-    if (!rowCount) return res.status(404).json({ message: 'Product not found' });
+    const ownerClause = isSuperAdmin(req.user)
+      ? `WHERE id=$1`
+      : `WHERE id=$1 AND seller_id=$2`;
+    const params = isSuperAdmin(req.user)
+      ? [req.params.id]
+      : [req.params.id, req.user.id];
+
+    const { rowCount } = await db.query(
+      `DELETE FROM products ${ownerClause}`, params
+    );
+    if (!rowCount)
+      return res.status(404).json({ message: 'Product not found or not yours' });
     res.json({ message: 'Product deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
 };
 
+// ── getInventory — Fix 7: seller sees only their own stock ───────────────────
 export const getInventory = async (req, res) => {
   try {
+    const sellerFilter = isSuperAdmin(req.user)
+      ? ''
+      : `AND pr.seller_id = ${req.user.id}`;
+
     const { rows } = await db.query(
       `SELECT pr.id, pr.name, pr.stock, pr.price, c.name AS category, pr.updated_at
        FROM products pr LEFT JOIN categories c ON pr.category_id=c.id
+       WHERE 1=1 ${sellerFilter}
        ORDER BY pr.stock ASC`
     );
-    const lowStock  = rows.filter(r => r.stock <= 5);
+    const lowStock   = rows.filter(r => r.stock > 0 && r.stock <= 5);
     const outOfStock = rows.filter(r => r.stock === 0);
     res.json({ products: rows, low_stock: lowStock, out_of_stock: outOfStock });
   } catch (err) {
@@ -126,6 +179,7 @@ export const getInventory = async (req, res) => {
   }
 };
 
+// ── getSuggestions ────────────────────────────────────────────────────────────
 export const getSuggestions = async (req, res) => {
   try {
     const userId = req.params.userId;

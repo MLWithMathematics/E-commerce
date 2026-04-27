@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Edit2, Trash2, Search, Package } from 'lucide-react'
 import api from '../../api/client'
 import { useToast } from '../../context/ToastContext'
+import { useAuth } from '../../context/AuthContext'
 import { Modal, ConfirmDialog, InputField, SelectField, TextareaField, EmptyState, Spinner } from '../../components/ui'
 
 const EMPTY_PRODUCT = {
@@ -11,17 +12,21 @@ const EMPTY_PRODUCT = {
 
 export default function AdminProducts() {
   const { toast } = useToast()
+  const { user } = useAuth()
+  const isSuperAdmin = user?.role === 'superAdmin'
   const [products, setProducts]     = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading]       = useState(true)
   const [search, setSearch]         = useState('')
-  const [editProduct, setEditProduct] = useState(null) // null=closed, {}=new, {id,...}=edit
+  const [editProduct, setEditProduct] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [saving, setSaving] = useState(false)
 
   const fetchProducts = async () => {
     setLoading(true)
     try {
+      // Fix 7: seller_id filter — backend scopes by req.user.id automatically
+      // For superAdmin the backend returns all; for sellers only their own
       const params = search ? `?search=${search}&limit=50` : '?limit=50'
       const { data } = await api.get(`/products${params}`)
       setProducts(data.products)

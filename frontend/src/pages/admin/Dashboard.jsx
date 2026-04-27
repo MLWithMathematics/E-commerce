@@ -1,22 +1,26 @@
 import { useState, useEffect } from 'react'
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts'
-import { Users, ShoppingBag, DollarSign, Package, TrendingUp, Clock, AlertTriangle } from 'lucide-react'
+import { Users, ShoppingBag, DollarSign, Package, AlertTriangle } from 'lucide-react'
 import { format } from 'date-fns'
 import api from '../../api/client'
+import { useAuth } from '../../context/AuthContext'
 import { PageLoader, StatusBadge, SectionHeader } from '../../components/ui'
 
 const COLORS = ['#1a1f2e','#f59e0b','#10b981','#ef4444','#6366f1','#ec4899']
 
 export default function AdminDashboard() {
+  const { user } = useAuth()
+  const isSuperAdmin = user?.role === 'superAdmin'
   const [stats, setStats]   = useState(null)
   const [orders, setOrders] = useState({ monthly:[], by_status:[], recent:[] })
   const [payments, setPayments] = useState({ monthly:[], by_method:[], by_status:[] })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Fix 7: backend already scopes stats to seller_id via req.user
     Promise.all([
       api.get('/dashboard/admin'),
       api.get('/orders/admin/stats'),
@@ -45,23 +49,27 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6 anim-fade-up">
       <div>
-        <h1 className="page-title">Admin Overview</h1>
-        <p className="text-[#6b7280] text-sm mt-1">Platform health at a glance</p>
+        <h1 className="page-title">{isSuperAdmin ? 'Admin Overview' : 'My Dashboard'}</h1>
+        <p className="text-[#6b7280] text-sm mt-1">
+          {isSuperAdmin ? 'Platform health at a glance' : 'Your products, orders & earnings'}
+        </p>
       </div>
 
-      {/* KPI row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
-        <AdminKpi icon={Users}       color="bg-blue-50 text-blue-600"
-          label="Total Users"    value={stats?.users?.total || 0}
-          sub={`${stats?.users?.customers||0} customers, ${stats?.users?.sellers||0} sellers`} />
+      {/* Fix 7: only superAdmin sees the Users KPI (sellers have no user mgmt) */}
+      <div className={`grid grid-cols-2 ${isSuperAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4 stagger`}>
+        {isSuperAdmin && (
+          <AdminKpi icon={Users} color="bg-blue-50 text-blue-600"
+            label="Total Users" value={stats?.users?.total || 0}
+            sub={`${stats?.users?.customers||0} customers, ${stats?.users?.sellers||0} sellers`} />
+        )}
         <AdminKpi icon={ShoppingBag} color="bg-purple-50 text-purple-600"
-          label="Total Orders"   value={stats?.orders?.total || 0}
+          label={isSuperAdmin ? 'Total Orders' : 'My Orders'} value={stats?.orders?.total || 0}
           sub={`${stats?.orders?.pending||0} pending`} />
         <AdminKpi icon={DollarSign}  color="bg-green-50 text-green-600"
-          label="Revenue"        value={`$${parseFloat(stats?.revenue?.received||0).toLocaleString()}`}
-          sub={`$${parseFloat(stats?.revenue?.pending||0).toLocaleString()} pending`} />
+          label={isSuperAdmin ? 'Revenue' : 'My Earnings'} value={`${parseFloat(stats?.revenue?.received||0).toLocaleString()}`}
+          sub={`${parseFloat(stats?.revenue?.pending||0).toLocaleString()} pending`} />
         <AdminKpi icon={Package}     color="bg-[#f59e0b]/10 text-[#f59e0b]"
-          label="Products"       value={stats?.products?.total || 0}
+          label={isSuperAdmin ? 'Products' : 'My Products'} value={stats?.products?.total || 0}
           sub={`${stats?.products?.out_of_stock||0} out of stock`}
           alert={stats?.products?.out_of_stock > 0} />
       </div>

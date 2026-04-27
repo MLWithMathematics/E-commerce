@@ -92,10 +92,10 @@ export const ConfirmDialog = ({ open, onClose, onConfirm, title, message, danger
 // ── Price display ────────────────────────────────────────────
 export const Price = ({ price, original, className = '' }) => (
   <div className={`flex items-baseline gap-2 ${className}`}>
-    <span className="font-semibold text-[#1a1f2e]">${Number(price).toFixed(2)}</span>
+    <span className="font-semibold text-[#1a1f2e]">₹{Number(price).toLocaleString('en-IN')}</span>
     {original && original > price && (
       <>
-        <span className="text-xs text-gray-400 line-through">${Number(original).toFixed(2)}</span>
+        <span className="text-xs text-gray-400 line-through">₹{Number(original).toLocaleString('en-IN')}</span>
         <span className="text-xs text-green-600 font-medium bg-green-50 px-1.5 py-0.5 rounded-md">
           {Math.round((1 - price/original)*100)}% off
         </span>

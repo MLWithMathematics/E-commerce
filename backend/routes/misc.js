@@ -69,4 +69,46 @@ reviewRouter.get('/product/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 });
 
-export { catRouter, payRouter, aboutRouter, cartRouter, dashRouter, reviewRouter };
+// ── shipping estimate (Shiprocket proxy) ─────────────────────────────
+// Requires: SHIPROCKET_EMAIL + SHIPROCKET_PASSWORD + WAREHOUSE_PIN in .env
+const shippingRouter = express.Router();
+let shiprocketToken = null;
+let shiprocketTokenExpiry = 0;
+
+async function getShiprocketToken() {
+  if (shiprocketToken && Date.now() < shiprocketTokenExpiry) return shiprocketToken;
+  const res = await fetch('https://apiv2.shiprocket.in/v1/external/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: process.env.SHIPROCKET_EMAIL,
+      password: process.env.SHIPROCKET_PASSWORD,
+    }),
+  });
+  const data = await res.json();
+  shiprocketToken = data.token;
+  shiprocketTokenExpiry = Date.now() + 23 * 60 * 60 * 1000; // cache 23 h
+  return shiprocketToken;
+}
+
+shippingRouter.get('/estimate', async (req, res) => {
+  const { pincode } = req.query;
+  if (!pincode || pincode.length !== 6)
+    return res.status(400).json({ message: 'Valid 6-digit pincode required' });
+  if (!process.env.SHIPROCKET_EMAIL)
+    return res.json({ etd: 'N/A — Shiprocket not configured', courier: '' });
+  try {
+    const token = await getShiprocketToken();
+    const estRes = await fetch(
+      `https://apiv2.shiprocket.in/v1/external/courier/serviceability/?pickup_postcode=${process.env.WAREHOUSE_PIN}&delivery_postcode=${pincode}&weight=0.5&cod=0`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const data = await estRes.json();
+    const best = data.data?.available_courier_companies?.[0];
+    res.json({ etd: best?.etd || 'N/A', courier: best?.courier_name || '' });
+  } catch (err) {
+    res.status(500).json({ message: 'Shiprocket error', error: err.message });
+  }
+});
+
+export { catRouter, payRouter, aboutRouter, cartRouter, dashRouter, reviewRouter, shippingRouter };
