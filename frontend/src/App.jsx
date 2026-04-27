@@ -97,7 +97,7 @@ function RequireAuth({ children, adminOnly = false }) {
 }
 
 // ── WhatsApp Floating Button ────────────────────────────────
-const WA_NUMBER = '919587456438'  // ← replace: country code + number, no +
+const WA_NUMBER = '914578646213'  // ← replace: country code + number, no +
 const WA_MESSAGE = encodeURIComponent('Hi! I have a question about my order.')
 
 function WhatsAppButton() {
