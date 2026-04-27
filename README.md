@@ -31,6 +31,8 @@
 - 🗺️ Store locator with 8 Indian store locations
 - 👤 Profile management and password change
 - ✅ Email verification on signup (configurable)
+- 💬 Floating WhatsApp support button for instant customer service
+- 🚚 Live shipping ETD estimates powered by Shiprocket
 
 ### Seller / Admin Features
 - 📈 Admin dashboard with revenue charts, order stats, top products
@@ -40,6 +42,7 @@
 - 📊 Inventory monitoring with low stock and out-of-stock alerts
 - 💳 Payment tracking — received vs pending
 - ✏️ Live About page editor (CMS)
+- 📊 Automated Order Syncing to Google Sheets for real-time inventory/order tracking
 - 👥 Multi-role user system (customer / seller / admin)
 
 ---
@@ -53,12 +56,14 @@
 | **Database** | PostgreSQL 14+ |
 | **Authentication** | JWT + bcryptjs |
 | **Email** | Nodemailer (SMTP) |
+| **Shipping** | Shiprocket API |
+| **Sync** | Google Sheets API (googleapis) |
 | **Charts** | Recharts |
 | **Icons** | Lucide React |
 | **HTTP Client** | Axios |
 | **Frontend Host** | Vercel |
-| **Backend Host** | Railway |
-| **DB Host** | Railway PostgreSQL |
+| **Backend Host** | Render |
+| **DB Host** | Render PostgreSQL |
 
 ---
 
@@ -215,29 +220,27 @@ Frontend auto-proxies `/api` calls to `http://localhost:5000` via Vite config.
 
 ## 🚀 Deployment
 
-### Backend → Railway
+### Backend → Render
 
 1. Push code to GitHub
-2. Go to [railway.app](https://railway.app) → New Project → Deploy from GitHub
-3. Add PostgreSQL plugin
-4. Set these environment variables in Railway:
+2. Go to [dashboard.render.com](https://dashboard.render.com) → New → Web Service
+3. Connect your GitHub repository
+4. Settings:
+   - **Environment:** `Node`
+   - **Build Command:** `npm install`
+   - **Start Command:** `npm start`
+5. Add these environment variables in Render:
 
 ```env
 NODE_ENV=production
-PORT=5000
 JWT_SECRET=<64-char random string>
 JWT_EXPIRES_IN=7d
 DEV_SKIP_EMAIL=true
 CLIENT_URL=https://your-vercel-app.vercel.app
-DATABASE_URL=${{Postgres.DATABASE_URL}}
-DB_HOST=${{RAILWAY_PRIVATE_DOMAIN}}
-DB_PORT=5432
-DB_NAME=${{POSTGRES_DB}}
-DB_USER=${{POSTGRES_USER}}
-DB_PASSWORD=${{POSTGRES_PASSWORD}}
+DATABASE_URL=postgres://... (get this from your Render DB)
 ```
 
-5. Railway auto-deploys on every `git push`
+6. Render auto-deploys on every `git push`
 
 ### Frontend → Vercel
 
@@ -248,18 +251,21 @@ DB_PASSWORD=${{POSTGRES_PASSWORD}}
    - **Output Directory:** `dist`
 3. Add environment variable:
 ```env
-VITE_API_URL=https://your-railway-url.up.railway.app/api
+VITE_API_URL=https://your-render-app.onrender.com/api
 ```
 4. Deploy
 
-### Run Database Schema on Railway
-After first deploy, go to Railway → Postgres → Database tab → paste and run `database/schema.sql`, then `database/migration.sql`.
+### Run Database Schema on Render
+1. New → PostgreSQL on Render
+2. Once created, copy the **External Database URL**
+3. Use a tool like `psql` or the Render Dashboard "Shell" to run `database/schema.sql`, then `database/migration.sql`.
+   - Example: `psql "EXTERNAL_URL" -f database/schema.sql`
 
 ---
 
 ## 🔑 Environment Variables Reference
 
-### Backend (Railway)
+### Backend (Render)
 | Variable | Example | Description |
 |----------|---------|-------------|
 | `NODE_ENV` | `production` | Environment mode |
@@ -268,12 +274,12 @@ After first deploy, go to Railway → Postgres → Database tab → paste and ru
 | `JWT_EXPIRES_IN` | `7d` | Token expiry — **lowercase d only** |
 | `CLIENT_URL` | `https://app.vercel.app` | Vercel URL for CORS — **must include https://** |
 | `DEV_SKIP_EMAIL` | `true` | Skip email verification (set `false` in production) |
-| `DATABASE_URL` | `postgresql://...` | Full Postgres connection string |
-| `DB_HOST` | `${{RAILWAY_PRIVATE_DOMAIN}}` | DB host (Railway reference variable) |
-| `DB_PORT` | `5432` | DB port |
-| `DB_NAME` | `${{POSTGRES_DB}}` | DB name |
-| `DB_USER` | `${{POSTGRES_USER}}` | DB user |
-| `DB_PASSWORD` | `${{POSTGRES_PASSWORD}}` | DB password |
+| `DATABASE_URL` | `postgresql://...` | Full Postgres connection string from Render |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | `{...}` | Service account credentials (JSON string) |
+| `SHEET_ID` | `1abc...` | Target Google Sheet ID |
+| `SHIPROCKET_EMAIL` | `user@email.com` | Shiprocket login email |
+| `SHIPROCKET_PASSWORD` | `...` | Shiprocket login password |
+| `WAREHOUSE_PIN` | `110001` | Origin pincode for shipping estimates |
 
 ### Frontend (Vercel)
 | Variable | Example | Description |
@@ -320,6 +326,9 @@ After first deploy, go to Railway → Postgres → Database tab → paste and ru
 | PUT | `/api/about` | Admin | Edit about section |
 | GET | `/api/dashboard/customer` | User | Customer stats + charts |
 | GET | `/api/dashboard/admin` | Admin | Platform stats + charts |
+| POST | `/api/reviews` | User | Submit/update product review |
+| GET | `/api/reviews/product/:id` | Public | List reviews for a product |
+| GET | `/api/shipping/estimate?pincode=` | Public | Get shipping ETD from Shiprocket |
 | GET | `/api/health` | Public | Health check |
 
 ---
@@ -358,5 +367,5 @@ MIT License — free to use, modify, and distribute.
 - [Express.js](https://expressjs.com/)
 - [PostgreSQL](https://www.postgresql.org/)
 - [Tailwind CSS](https://tailwindcss.com/)
-- [Railway](https://railway.app/)
+- [Render](https://render.com/)
 - [Vercel](https://vercel.com/)
