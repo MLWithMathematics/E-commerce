@@ -149,7 +149,12 @@ export function LoginPage() {
             />
 
             <div className="flex flex-col gap-1">
-              <label className="label">Password</label>
+              <div className="flex items-center justify-between">
+                <label className="label">Password</label>
+                <Link to="/forgot-password" className="text-xs text-[#6b7280] hover:text-[#f59e0b] transition-colors">
+                  Forgot password?
+                </Link>
+              </div>
               <div className="relative">
                 <input
                   className={`input pr-10 ${error && error.toLowerCase().includes('password') ? 'border-red-400' : ''}`}

@@ -19,6 +19,10 @@ router.post('/login', ctrl.login);
 router.get('/verify-email', ctrl.verifyEmail);
 router.post('/resend-verification', ctrl.resendVerification);
 
+// Password reset
+router.post('/forgot-password', ctrl.forgotPassword);
+router.post('/reset-password',  ctrl.resetPassword);
+
 // Authenticated routes
 router.get('/me', authenticate, ctrl.getMe);
 router.put('/me', authenticate, ctrl.updateMe);

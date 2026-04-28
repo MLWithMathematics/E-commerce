@@ -1,7 +1,8 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, ShoppingBag, Sparkles, User,
-  ShoppingCart, CreditCard, LogOut, ChevronRight, Package2, Package
+  ShoppingCart, CreditCard, LogOut, ChevronRight, Package2, Package,
+  Heart, Tag, RotateCcw
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
@@ -10,6 +11,7 @@ const customerNav = [
   { icon: LayoutDashboard, label: 'Dashboard',    to: '/dashboard' },
   { icon: Sparkles,        label: 'New Arrivals', to: '/products?new_arrival=true' },
   { icon: ShoppingBag,     label: 'My Orders',    to: '/orders' },
+  { icon: Heart,           label: 'Wishlist',     to: '/wishlist' },
   { icon: ShoppingCart,    label: 'Cart',         to: '/cart' },
   { icon: User,            label: 'Profile',      to: '/profile' },
 ]
@@ -21,6 +23,8 @@ const adminNav = [
   { icon: ShoppingBag,     label: 'Orders',    to: '/admin/orders' },
   { icon: Package2,        label: 'Inventory', to: '/admin/inventory' },
   { icon: CreditCard,      label: 'Payments',  to: '/admin/payments' },
+  { icon: Tag,             label: 'Coupons',   to: '/admin/coupons' },
+  { icon: RotateCcw,       label: 'Returns',   to: '/admin/returns' },
 ]
 
 export default function Sidebar({ collapsed = false }) {

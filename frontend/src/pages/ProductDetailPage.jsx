@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ShoppingCart, ArrowLeft, Minus, Plus, Star } from 'lucide-react'
+import { ShoppingCart, ArrowLeft, Minus, Plus, Star, Heart } from 'lucide-react'
 import api from '../api/client'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import { PageLoader, StarRating, Price, StatusBadge } from '../components/ui'
+import { useWishlist } from '../context/WishlistContext'
+import { PageLoader, StarRating, Price, StatusBadge, Modal, InputField, TextareaField } from '../components/ui'
 
 export default function ProductDetailPage() {
   const { id } = useParams()
@@ -13,6 +14,7 @@ export default function ProductDetailPage() {
   const { upsert } = useCart()
   const { user } = useAuth()
   const { toast } = useToast()
+  const { isWishlisted, toggle: toggleWishlist } = useWishlist()
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [qty, setQty] = useState(1)
@@ -20,6 +22,13 @@ export default function ProductDetailPage() {
   const [pin, setPin] = useState('')
   const [etd, setEtd] = useState(null)
   const [etdLoading, setEtdLoading] = useState(false)
+  const [wishlistLoading, setWishlistLoading] = useState(false)
+
+  // Review state
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const [reviewForm, setReviewForm] = useState({ rating: 5, title: '', comment: '' })
+  const [reviewSaving, setReviewSaving] = useState(false)
+  const [hoverRating, setHoverRating] = useState(0)
 
   const checkDelivery = async () => {
     if (pin.length !== 6) return
@@ -35,24 +44,51 @@ export default function ProductDetailPage() {
     }
   }
 
-  useEffect(() => {
+  const fetchProduct = () => {
     api.get(`/products/${id}`)
       .then(r => { setProduct(r.data); setSelectedImg(0) })
       .catch(() => navigate('/products'))
       .finally(() => setLoading(false))
-  }, [id])
+  }
+
+  useEffect(() => { fetchProduct() }, [id])
 
   if (loading) return <PageLoader />
   if (!product) return null
 
   const images = [product.image_url, ...(product.images || [])].filter(Boolean)
   const disc = product.original_price > product.price
-    ? Math.round((1-product.price/product.original_price)*100) : 0
+    ? Math.round((1 - product.price / product.original_price) * 100) : 0
+  const wishlisted = isWishlisted(parseInt(id))
 
   const handleAddToCart = async () => {
     if (!user) { toast('Please sign in', 'info'); navigate('/login'); return }
     await upsert(product.id, qty)
     toast(`${product.name} added to cart!`, 'success')
+  }
+
+  const handleToggleWishlist = async () => {
+    if (!user) { toast('Please sign in to save items', 'info'); navigate('/login'); return }
+    setWishlistLoading(true)
+    try {
+      const nowWishlisted = await toggleWishlist(product.id)
+      toast(nowWishlisted ? 'Added to wishlist!' : 'Removed from wishlist', nowWishlisted ? 'success' : 'info')
+    } catch { toast('Could not update wishlist', 'error') }
+    finally { setWishlistLoading(false) }
+  }
+
+  const handleSubmitReview = async () => {
+    if (!reviewForm.rating) { toast('Please select a rating', 'error'); return }
+    setReviewSaving(true)
+    try {
+      await api.post('/reviews', { product_id: product.id, ...reviewForm })
+      toast('Review submitted!', 'success')
+      setReviewOpen(false)
+      setReviewForm({ rating: 5, title: '', comment: '' })
+      fetchProduct()
+    } catch (err) {
+      toast(err.response?.data?.message || 'Could not submit review', 'error')
+    } finally { setReviewSaving(false) }
   }
 
   return (
@@ -73,7 +109,7 @@ export default function ProductDetailPage() {
               {images.map((img, i) => (
                 <button key={i} onClick={() => setSelectedImg(i)}
                   className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all
-                    ${selectedImg===i ? 'border-[#f59e0b]' : 'border-gray-200 hover:border-gray-400'}`}>
+                    ${selectedImg === i ? 'border-[#f59e0b]' : 'border-gray-200 hover:border-gray-400'}`}>
                   <img src={img} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
@@ -90,6 +126,12 @@ export default function ProductDetailPage() {
           <div className="flex items-center gap-3">
             <StarRating rating={product.rating} size={16} />
             <span className="text-sm text-[#6b7280]">({product.review_count} reviews)</span>
+            {user && (
+              <button onClick={() => setReviewOpen(true)}
+                className="text-xs text-[#f59e0b] font-medium hover:underline ml-1">
+                Write a review
+              </button>
+            )}
           </div>
 
           <Price price={product.price} original={product.original_price} className="text-xl" />
@@ -106,7 +148,6 @@ export default function ProductDetailPage() {
             </span>
           </div>
 
-          {/* Category tag */}
           {product.category_name && (
             <div className="flex gap-2">
               <span className="text-xs bg-gray-100 text-[#6b7280] px-3 py-1 rounded-full">{product.category_name}</span>
@@ -123,15 +164,12 @@ export default function ProductDetailPage() {
                 maxLength={6}
                 placeholder="e.g. 110001"
                 value={pin}
-                onChange={e => { setPin(e.target.value.replace(/\D/g,'')); setEtd(null) }}
-                onKeyDown={e => e.key==='Enter' && checkDelivery()}
+                onChange={e => { setPin(e.target.value.replace(/\D/g, '')); setEtd(null) }}
+                onKeyDown={e => e.key === 'Enter' && checkDelivery()}
                 className="border border-gray-200 rounded-xl px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30"
               />
-              <button
-                onClick={checkDelivery}
-                disabled={pin.length!==6 || etdLoading}
-                className="btn-accent text-sm px-4 py-2 disabled:opacity-50"
-              >
+              <button onClick={checkDelivery} disabled={pin.length !== 6 || etdLoading}
+                className="btn-accent text-sm px-4 py-2 disabled:opacity-50">
                 {etdLoading ? 'Checking…' : 'Check'}
               </button>
             </div>
@@ -141,21 +179,19 @@ export default function ProductDetailPage() {
                 Delivery by <strong>{etd.etd}</strong> via {etd.courier}
               </p>
             )}
-            {etd?.error && (
-              <p className="text-sm text-red-500">{etd.error}</p>
-            )}
+            {etd?.error && <p className="text-sm text-red-500">{etd.error}</p>}
           </div>
 
-          {/* Qty + Add to Cart */}
+          {/* Qty + Add to Cart + Wishlist */}
           {product.stock > 0 && (
             <div className="flex items-center gap-3 pt-2">
               <div className="flex items-center gap-1 border border-gray-200 rounded-xl">
-                <button onClick={() => setQty(q => Math.max(1, q-1))}
+                <button onClick={() => setQty(q => Math.max(1, q - 1))}
                   className="w-9 h-9 flex items-center justify-center hover:bg-gray-50 rounded-l-xl text-[#6b7280]">
                   <Minus size={14} />
                 </button>
                 <span className="w-10 text-center font-semibold text-sm">{qty}</span>
-                <button onClick={() => setQty(q => Math.min(product.stock, q+1))}
+                <button onClick={() => setQty(q => Math.min(product.stock, q + 1))}
                   className="w-9 h-9 flex items-center justify-center hover:bg-gray-50 rounded-r-xl text-[#6b7280]">
                   <Plus size={14} />
                 </button>
@@ -163,15 +199,51 @@ export default function ProductDetailPage() {
               <button onClick={handleAddToCart} className="btn-accent flex-1 py-3">
                 <ShoppingCart size={18} /> Add to Cart
               </button>
+              <button
+                onClick={handleToggleWishlist}
+                disabled={wishlistLoading}
+                className={`p-3 rounded-xl border-2 transition-all ${
+                  wishlisted
+                    ? 'border-red-300 bg-red-50 text-red-500'
+                    : 'border-gray-200 hover:border-red-300 hover:text-red-400 text-gray-400'
+                }`}
+                title={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+              >
+                <Heart size={20} className={wishlisted ? 'fill-current' : ''} />
+              </button>
             </div>
+          )}
+
+          {/* Out of stock wishlist button */}
+          {product.stock === 0 && (
+            <button
+              onClick={handleToggleWishlist}
+              disabled={wishlistLoading}
+              className={`flex items-center gap-2 text-sm py-2.5 px-4 rounded-xl border-2 transition-all ${
+                wishlisted
+                  ? 'border-red-300 bg-red-50 text-red-500'
+                  : 'border-gray-200 hover:border-red-300 text-gray-500'
+              }`}
+            >
+              <Heart size={16} className={wishlisted ? 'fill-current' : ''} />
+              {wishlisted ? 'Saved to Wishlist' : 'Save to Wishlist'}
+            </button>
           )}
         </div>
       </div>
 
-      {/* Reviews */}
-      {product.reviews?.length > 0 && (
-        <div className="mt-12">
-          <h2 className="font-display text-2xl font-bold mb-6">Customer Reviews</h2>
+      {/* Reviews Section */}
+      <div className="mt-12">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-display text-2xl font-bold">Customer Reviews</h2>
+          {user && (
+            <button onClick={() => setReviewOpen(true)} className="btn-accent text-sm gap-1.5">
+              <Star size={14} /> Write a Review
+            </button>
+          )}
+        </div>
+
+        {product.reviews?.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2">
             {product.reviews.map(r => (
               <div key={r.id} className="card">
@@ -192,8 +264,70 @@ export default function ProductDetailPage() {
               </div>
             ))}
           </div>
+        ) : (
+          <div className="card text-center py-10">
+            <Star size={28} className="text-gray-300 mx-auto mb-2" />
+            <p className="text-[#6b7280] text-sm">No reviews yet. Be the first to review this product!</p>
+            {user && (
+              <button onClick={() => setReviewOpen(true)} className="btn-accent text-sm mt-3">
+                Write the first review
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Write Review Modal */}
+      <Modal open={reviewOpen} onClose={() => setReviewOpen(false)} title="Write a Review" size="md">
+        <div className="space-y-4">
+          {/* Star picker */}
+          <div>
+            <label className="label mb-2">Your Rating *</label>
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map(star => (
+                <button
+                  key={star}
+                  type="button"
+                  onMouseEnter={() => setHoverRating(star)}
+                  onMouseLeave={() => setHoverRating(0)}
+                  onClick={() => setReviewForm(p => ({ ...p, rating: star }))}
+                  className="transition-transform hover:scale-110"
+                >
+                  <Star
+                    size={28}
+                    className={
+                      star <= (hoverRating || reviewForm.rating)
+                        ? 'text-[#f59e0b] fill-[#f59e0b]'
+                        : 'text-gray-200 fill-gray-200'
+                    }
+                  />
+                </button>
+              ))}
+              <span className="ml-2 text-sm text-[#6b7280] self-center">
+                {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][hoverRating || reviewForm.rating]}
+              </span>
+            </div>
+          </div>
+          <InputField
+            label="Review Title (optional)"
+            placeholder="Summarise your experience"
+            value={reviewForm.title}
+            onChange={e => setReviewForm(p => ({ ...p, title: e.target.value }))}
+          />
+          <TextareaField
+            label="Review (optional)"
+            placeholder="Tell others what you think about this product…"
+            value={reviewForm.comment}
+            onChange={e => setReviewForm(p => ({ ...p, comment: e.target.value }))}
+          />
+          <div className="flex gap-3 justify-end pt-1">
+            <button className="btn-ghost" onClick={() => setReviewOpen(false)}>Cancel</button>
+            <button className="btn-accent" onClick={handleSubmitReview} disabled={reviewSaving}>
+              {reviewSaving ? 'Submitting…' : 'Submit Review'}
+            </button>
+          </div>
         </div>
-      )}
+      </Modal>
     </div>
   )
 }

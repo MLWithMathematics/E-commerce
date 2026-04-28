@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
 import productRoutes from './routes/products.js';
 import orderRoutes from './routes/orders.js';
-import { catRouter, payRouter, aboutRouter, cartRouter, dashRouter, reviewRouter, shippingRouter } from './routes/misc.js';
+import { catRouter, payRouter, aboutRouter, cartRouter, dashRouter, reviewRouter, shippingRouter, wishlistRouter, couponRouter, addressRouter, returnRouter, uploadRouter } from './routes/misc.js';
 
 dotenv.config();
 
@@ -58,6 +58,11 @@ app.use('/api/cart',       cartRouter);
 app.use('/api/dashboard',  dashRouter);
 app.use('/api/reviews',    reviewRouter);
 app.use('/api/shipping',   shippingRouter);
+app.use('/api/wishlist',   wishlistRouter);
+app.use('/api/coupons',    couponRouter);
+app.use('/api/addresses',  addressRouter);
+app.use('/api/returns',    returnRouter);
+app.use('/api/upload',     uploadRouter);
 
 // ── Health check ─────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

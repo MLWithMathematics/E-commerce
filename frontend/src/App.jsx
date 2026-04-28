@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import { ToastProvider } from './context/ToastContext'
+import { WishlistProvider } from './context/WishlistContext'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import { PageLoader } from './components/ui'
@@ -17,12 +18,15 @@ import ProductsPage from './pages/ProductsPage'
 import ProductDetailPage from './pages/ProductDetailPage'
 import StoreLocatorPage from './pages/StoreLocatorPage'
 import VerifyEmailPage from './pages/VerifyEmailPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 
 // Pages - Customer
 import CustomerDashboard from './pages/customer/Dashboard'
 import OrdersPage from './pages/customer/Orders'
 import CartPage from './pages/CartPage'
 import ProfilePage from './pages/ProfilePage'
+import WishlistPage from './pages/WishlistPage'
 
 // Pages - Admin
 import AdminDashboard from './pages/admin/Dashboard'
@@ -30,6 +34,8 @@ import AdminProducts from './pages/admin/Products'
 import AdminOrders from './pages/admin/Orders'
 import AdminInventory from './pages/admin/Inventory'
 import AdminPayments from './pages/admin/Payments'
+import AdminCoupons from './pages/admin/Coupons'
+import AdminReturns from './pages/admin/Returns'
 // AdminCategories and AdminAbout removed from seller dashboard (fixes #5, #6)
 
 // ── Layouts ───────────────────────────────────────────────────
@@ -130,7 +136,8 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <CartProvider>
-          <ToastProvider>
+          <WishlistProvider>
+            <ToastProvider>
             <Routes>
               {/* Public pages */}
               <Route element={<PublicLayout />}>
@@ -140,6 +147,8 @@ export default function App() {
                 <Route path="/login"         element={<LoginPage />} />
                 <Route path="/signup"        element={<SignupPage />} />
                 <Route path="/verify-email"  element={<VerifyEmailPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password"  element={<ResetPasswordPage />} />
                 <Route path="/products"      element={<ProductsPage />} />
                 <Route path="/products/:id"  element={<ProductDetailPage />} />
               </Route>
@@ -148,6 +157,7 @@ export default function App() {
               <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
                 <Route path="/dashboard" element={<CustomerDashboard />} />
                 <Route path="/orders"    element={<OrdersPage />} />
+                <Route path="/wishlist"  element={<WishlistPage />} />
                 <Route path="/cart"      element={<CartPage />} />
                 <Route path="/profile"   element={<ProfilePage />} />
               </Route>
@@ -159,6 +169,8 @@ export default function App() {
                 <Route path="/admin/orders"     element={<AdminOrders />} />
                 <Route path="/admin/inventory"  element={<AdminInventory />} />
                 <Route path="/admin/payments"   element={<AdminPayments />} />
+                <Route path="/admin/coupons"    element={<AdminCoupons />} />
+                <Route path="/admin/returns"    element={<AdminReturns />} />
                 {/* Fix 2: Analytics had no page — redirect to dashboard which has all charts */}
                 <Route path="/admin/analytics" element={<Navigate to="/admin/dashboard" replace />} />
                 {/* Fix 6: About editor removed from seller panel */}
@@ -167,7 +179,8 @@ export default function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <WhatsAppButton />
-          </ToastProvider>
+            </ToastProvider>
+          </WishlistProvider>
         </CartProvider>
       </AuthProvider>
     </BrowserRouter>

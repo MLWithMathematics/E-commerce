@@ -295,6 +295,105 @@ export const updateMe = async (req, res) => {
   }
 };
 
+// ── forgotPassword ───────────────────────────────────────────
+export const forgotPassword = async (req, res) => {
+  const email = normaliseEmail(req.body.email);
+  if (!email) return res.status(400).json({ message: 'Email is required.' });
+  try {
+    const { rows } = await db.query(
+      'SELECT id, name, email FROM users WHERE email = $1', [email]
+    );
+    // Always respond OK to avoid email enumeration attacks
+    if (!rows.length)
+      return res.json({ message: 'If that email exists, a reset link has been sent.' });
+
+    const user = rows[0];
+    // Invalidate previous tokens
+    await db.query('UPDATE password_reset_tokens SET used = TRUE WHERE user_id = $1', [user.id]);
+
+    const token = crypto.randomBytes(48).toString('hex');
+    await db.query(
+      `INSERT INTO password_reset_tokens (user_id, token, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '1 hour')`,
+      [user.id, token]
+    );
+
+    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password?token=${token}`;
+    console.log('\n──────────────────────────────────────────────────');
+    console.log(`🔑  Password reset link for ${email}:`);
+    console.log(`    ${resetUrl}`);
+    console.log('──────────────────────────────────────────────────\n');
+
+    try {
+      const mailer = await getTransporter();
+      if (mailer) {
+        await mailer.sendMail({
+          from:    process.env.EMAIL_FROM || 'WipSom <no-reply@wipsom.com>',
+          to:      email,
+          subject: 'Reset your WipSom password',
+          html: `
+            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#f8f7f4">
+              <div style="background:#1a1f2e;border-radius:16px;padding:24px;text-align:center;margin-bottom:24px">
+                <h1 style="color:#f59e0b;font-size:24px;margin:0">WipSom</h1>
+              </div>
+              <h2 style="color:#1a1f2e">Hi ${user.name}, reset your password</h2>
+              <p style="color:#6b7280">Click the button below to set a new password. This link expires in 1 hour.</p>
+              <a href="${resetUrl}"
+                 style="display:inline-block;background:#f59e0b;color:#fff;text-decoration:none;
+                        padding:12px 32px;border-radius:12px;font-weight:600;margin:16px 0">
+                Reset Password
+              </a>
+              <p style="color:#9ca3af;font-size:12px;margin-top:24px">If you didn't request this, ignore this email.</p>
+              <p style="color:#9ca3af;font-size:11px">URL: ${resetUrl}</p>
+            </div>
+          `,
+        });
+      }
+    } catch (mailErr) {
+      console.warn('⚠️  Reset email send failed:', mailErr.message);
+    }
+
+    res.json({ message: 'If that email exists, a reset link has been sent.' });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ message: 'Something went wrong. Please try again.' });
+  }
+};
+
+// ── resetPassword ─────────────────────────────────────────────
+export const resetPassword = async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password)
+    return res.status(400).json({ message: 'Token and new password are required.' });
+  if (password.length < 6)
+    return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+  try {
+    const { rows } = await db.query(
+      `SELECT prt.*, u.email FROM password_reset_tokens prt
+       JOIN users u ON prt.user_id = u.id
+       WHERE prt.token = $1`,
+      [token]
+    );
+    if (!rows.length)
+      return res.status(400).json({ message: 'Invalid or expired reset link.' });
+
+    const record = rows[0];
+    if (record.used)
+      return res.status(400).json({ message: 'This reset link has already been used.' });
+    if (new Date(record.expires_at) < new Date())
+      return res.status(400).json({ message: 'This link has expired. Please request a new one.' });
+
+    const hash = await bcrypt.hash(password, 12);
+    await db.query('UPDATE users SET password = $1 WHERE id = $2', [hash, record.user_id]);
+    await db.query('UPDATE password_reset_tokens SET used = TRUE WHERE id = $1', [record.id]);
+
+    res.json({ message: 'Password reset successfully. You can now log in.' });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ message: 'Reset failed. Please try again.' });
+  }
+};
+
 export const changePassword = async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   try {

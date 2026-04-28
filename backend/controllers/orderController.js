@@ -1,7 +1,57 @@
 import db from '../config/db.js';
+import nodemailer from 'nodemailer';
 
 // helper — superAdmin sees everything; seller sees only their own scope
 const isSuperAdmin = (user) => user?.role === 'admin';
+
+// ── Email transporter (shared singleton) ────────────────────────────────
+let _mailer = null;
+async function getMailer() {
+  if (_mailer) return _mailer;
+  if (!process.env.SMTP_HOST && !process.env.BREVO_SMTP_KEY) return null;
+  try {
+    const t = nodemailer.createTransport(
+      process.env.BREVO_SMTP_KEY
+        ? { host: 'smtp-relay.brevo.com', port: 587, auth: { user: process.env.BREVO_LOGIN, pass: process.env.BREVO_SMTP_KEY } }
+        : { host: process.env.SMTP_HOST, port: parseInt(process.env.SMTP_PORT)||587, secure: process.env.SMTP_SECURE==='true', auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } }
+    );
+    await t.verify();
+    _mailer = t;
+    return _mailer;
+  } catch { return null; }
+}
+
+async function sendOrderConfirmationEmail(userEmail, userName, order, itemNames) {
+  try {
+    const mailer = await getMailer();
+    if (!mailer) return;
+    await mailer.sendMail({
+      from: process.env.EMAIL_FROM || 'WipSom <no-reply@wipsom.com>',
+      to: userEmail,
+      subject: `Order #${order.id} Confirmed — WipSom`,
+      html: `
+        <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px;background:#f8f7f4">
+          <div style="background:#1a1f2e;border-radius:16px;padding:24px;text-align:center;margin-bottom:24px">
+            <h1 style="color:#f59e0b;font-size:24px;margin:0">WipSom</h1>
+          </div>
+          <h2 style="color:#1a1f2e">Hi ${userName}, your order is confirmed!</h2>
+          <p style="color:#6b7280">Thank you for your purchase. Here are your order details:</p>
+          <div style="background:#fff;border-radius:12px;padding:20px;margin:16px 0">
+            <p style="margin:0 0 8px"><strong>Order ID:</strong> #${order.id}</p>
+            <p style="margin:0 0 8px"><strong>Items:</strong> ${itemNames}</p>
+            <p style="margin:0 0 8px"><strong>Total:</strong> ₹${parseFloat(order.total).toLocaleString('en-IN')}</p>
+            <p style="margin:0 0 8px"><strong>Payment:</strong> ${order.payment_method || 'card'}</p>
+            <p style="margin:0"><strong>Ship to:</strong> ${order.shipping_address || 'N/A'}</p>
+          </div>
+          <p style="color:#9ca3af;font-size:12px;margin-top:24px">We'll notify you when your order ships.</p>
+        </div>
+      `,
+    });
+    console.log(`✅  Order confirmation email sent to ${userEmail}`);
+  } catch (err) {
+    console.warn('⚠️  Order confirmation email failed:', err.message);
+  }
+}
 
 // ── Google Sheets sync ────────────────────────────────────────────────────────
 async function appendOrderToSheet(order, userEmail, itemNames) {
@@ -76,6 +126,7 @@ export const createOrder = async (req, res) => {
 
     const itemNames = enriched.map(i => (i.name || i.product_id) + 'x' + i.quantity).join(', ');
     appendOrderToSheet({ ...order, payment_method, upi_ref }, req.user.email, itemNames);
+    sendOrderConfirmationEmail(req.user.email, req.user.name, { ...order, payment_method, shipping_address: order.shipping_address }, itemNames).catch(() => {});
 
     res.status(201).json(order);
   } catch (err) {

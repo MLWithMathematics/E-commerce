@@ -1,6 +1,7 @@
 import express from 'express';
 import * as misc from '../controllers/miscControllers.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
+import { upload } from '../middleware/upload.js';
 import db from '../config/db.js';
 
 // ── categories ─────────────────────────────────────
@@ -69,8 +70,54 @@ reviewRouter.get('/product/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 });
 
+reviewRouter.delete('/:id', authenticate, async (req, res) => {
+  try {
+    await db.query(
+      'DELETE FROM reviews WHERE id=$1 AND user_id=$2',
+      [req.params.id, req.user.id]
+    );
+    res.json({ message: 'Review deleted' });
+  } catch (err) { res.status(500).json({ message: 'Server error' }); }
+});
+
+// ── wishlist ──────────────────────────────────────
+const wishlistRouter = express.Router();
+wishlistRouter.get('/',                 authenticate, misc.getWishlist);
+wishlistRouter.post('/',                authenticate, misc.toggleWishlist);
+wishlistRouter.get('/check/:productId', authenticate, misc.checkWishlist);
+
+// ── coupons ───────────────────────────────────────
+const couponRouter = express.Router();
+couponRouter.post('/apply',  authenticate, misc.applyCoupon);
+couponRouter.get('/',        authenticate, requireAdmin, misc.getCoupons);
+couponRouter.post('/',       authenticate, requireAdmin, misc.createCoupon);
+couponRouter.patch('/:id/toggle', authenticate, requireAdmin, misc.toggleCoupon);
+
+// ── addresses ─────────────────────────────────────
+const addressRouter = express.Router();
+addressRouter.get('/',              authenticate, misc.getAddresses);
+addressRouter.post('/',             authenticate, misc.createAddress);
+addressRouter.put('/:id',           authenticate, misc.updateAddress);
+addressRouter.delete('/:id',        authenticate, misc.deleteAddress);
+addressRouter.patch('/:id/default', authenticate, misc.setDefaultAddress);
+
+// ── return requests ───────────────────────────────
+const returnRouter = express.Router();
+returnRouter.post('/:orderId',     authenticate, misc.createReturnRequest);
+returnRouter.get('/my',            authenticate, misc.getMyReturnRequests);
+returnRouter.get('/admin/all',     authenticate, requireAdmin, misc.getAllReturnRequests);
+returnRouter.patch('/admin/:id',   authenticate, requireAdmin, misc.updateReturnRequest);
+
+// ── image upload ──────────────────────────────────
+const uploadRouter = express.Router();
+uploadRouter.post('/', authenticate, requireAdmin, upload.single('image'), (req, res) => {
+  if (!req.file)
+    return res.status(400).json({ message: 'No file uploaded' });
+  const url = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+  res.json({ url, filename: req.file.filename });
+});
+
 // ── shipping estimate (Shiprocket proxy) ─────────────────────────────
-// Requires: SHIPROCKET_EMAIL + SHIPROCKET_PASSWORD + WAREHOUSE_PIN in .env
 const shippingRouter = express.Router();
 let shiprocketToken = null;
 let shiprocketTokenExpiry = 0;
@@ -87,7 +134,7 @@ async function getShiprocketToken() {
   });
   const data = await res.json();
   shiprocketToken = data.token;
-  shiprocketTokenExpiry = Date.now() + 23 * 60 * 60 * 1000; // cache 23 h
+  shiprocketTokenExpiry = Date.now() + 23 * 60 * 60 * 1000;
   return shiprocketToken;
 }
 
@@ -111,4 +158,8 @@ shippingRouter.get('/estimate', async (req, res) => {
   }
 });
 
-export { catRouter, payRouter, aboutRouter, cartRouter, dashRouter, reviewRouter, shippingRouter };
+export {
+  catRouter, payRouter, aboutRouter, cartRouter, dashRouter,
+  reviewRouter, shippingRouter, wishlistRouter, couponRouter,
+  addressRouter, returnRouter, uploadRouter,
+};

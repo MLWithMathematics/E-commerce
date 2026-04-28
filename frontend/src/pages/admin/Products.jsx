@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, Search, Package } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Plus, Edit2, Trash2, Search, Package, Upload, Loader2 } from 'lucide-react'
 import api from '../../api/client'
 import { useToast } from '../../context/ToastContext'
 import { useAuth } from '../../context/AuthContext'
@@ -71,6 +71,22 @@ export default function AdminProducts() {
   }
 
   const set = (key, val) => setEditProduct(p => ({...p, [key]: val}))
+
+  const fileRef = useRef(null)
+  const [uploading, setUploading] = useState(false)
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('image', file)
+      const { data } = await api.post('/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      set('image_url', data.url)
+      toast('Image uploaded!', 'success')
+    } catch { toast('Upload failed', 'error') }
+    finally { setUploading(false) }
+  }
 
   return (
     <div className="space-y-5 anim-fade-up">
@@ -178,8 +194,24 @@ export default function AdminProducts() {
             </SelectField>
             <InputField label="Stock *" type="number" min="0" value={editProduct.stock}
               onChange={e=>set('stock',e.target.value)} />
-            <InputField label="Image URL" value={editProduct.image_url||''} className="sm:col-span-2"
-              onChange={e=>set('image_url',e.target.value)} placeholder="https://..." />
+            <div className="sm:col-span-2">
+              <label className="label mb-1">Product Image</label>
+              <div className="flex gap-2 items-start">
+                <input className="input text-sm flex-1" value={editProduct.image_url||''}
+                  onChange={e=>set('image_url',e.target.value)} placeholder="https://... or upload →" />
+                <button type="button" onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  className="btn-ghost border border-gray-200 px-3 py-2 text-sm gap-1.5 shrink-0 disabled:opacity-50">
+                  {uploading ? <Loader2 size={14} className="animate-spin"/> : <Upload size={14}/>}
+                  {uploading ? 'Uploading…' : 'Upload'}
+                </button>
+                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload}/>
+              </div>
+              {editProduct.image_url && (
+                <img src={editProduct.image_url} alt="preview"
+                  className="mt-2 w-20 h-20 rounded-xl object-cover border border-gray-200"/>
+              )}
+            </div>
             <div className="sm:col-span-2 flex gap-6">
               <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
                 <input type="checkbox" checked={editProduct.is_new_arrival}
