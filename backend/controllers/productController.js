@@ -1,8 +1,8 @@
 import db from '../config/db.js';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
-// superAdmin sees everything; admin/seller only sees their own data
-const isSuperAdmin = (user) => user?.role === 'superAdmin';
+// admin (superAdmin) sees everything; seller only sees their own data
+const isSuperAdmin = (user) => user?.role === 'admin';
 
 // ── getProducts ───────────────────────────────────────────────────────────────
 export const getProducts = async (req, res) => {

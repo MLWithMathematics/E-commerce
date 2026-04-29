@@ -1,1 +1,1 @@
-export { AdminAbout as default } from './allAdminPages.jsx'
+export { default } from './About.jsx'

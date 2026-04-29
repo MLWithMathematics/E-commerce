@@ -13,7 +13,7 @@ const EMPTY_PRODUCT = {
 export default function AdminProducts() {
   const { toast } = useToast()
   const { user } = useAuth()
-  const isSuperAdmin = user?.role === 'superAdmin'
+  const isSuperAdmin = user?.role === 'admin'
   const [products, setProducts]     = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading]       = useState(true)

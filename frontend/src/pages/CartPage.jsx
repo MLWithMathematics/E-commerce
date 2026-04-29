@@ -1,39 +1,21 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Tag, X, CheckCircle2, CreditCard } from 'lucide-react'
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Tag, X, CheckCircle2 } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
-import { useAuth } from '../context/AuthContext'
 import api from '../api/client'
-import { EmptyState, Modal, InputField, SelectField, TextareaField } from '../components/ui'
-import { useRazorpay } from '../hooks/useRazorpay'
+import { EmptyState } from '../components/ui'
 import SEO from '../components/SEO'
 
 export default function CartPage() {
-  const { items, total, upsert, remove, clear, refetch } = useCart()
-  const { toast } = useToast()
-  const { user } = useAuth()
-  const navigate = useNavigate()
-  const { pay } = useRazorpay()
-  const [checkoutOpen, setCheckoutOpen] = useState(false)
-  const [placing, setPlacing] = useState(false)
+  const { items, total, upsert, remove, clear } = useCart()
+  const { toast }   = useToast()
+  const navigate    = useNavigate()
 
-  // Coupon state
-  const [couponCode, setCouponCode]   = useState('')
-  const [couponData, setCouponData]   = useState(null)   // applied coupon
+  const [couponCode, setCouponCode]     = useState('')
+  const [couponData, setCouponData]     = useState(null)
   const [couponLoading, setCouponLoading] = useState(false)
-  const [couponError, setCouponError] = useState('')
-
-  const [form, setForm] = useState({
-    shipping_address: user?.address || '',
-    notes: '',
-    payment_method: 'card',
-    scheduled_date: '',
-    upi_ref: '',
-  })
-
-  const UPI_ID    = 'yourshop@upi'
-  const SHOP_NAME = 'WipSom'
+  const [couponError, setCouponError]   = useState('')
 
   const discountedTotal = couponData
     ? Math.max(0, parseFloat(total) - couponData.discount_amount)
@@ -65,67 +47,9 @@ export default function CartPage() {
   }
 
   const handleQtyChange = async (product_id, newQty) => {
-    if (couponData) { setCouponData(null); setCouponCode('') }   // recalculate
+    if (couponData) { setCouponData(null); setCouponCode('') }
     if (newQty <= 0) await remove(product_id)
     else await upsert(product_id, newQty)
-  }
-
-  const handlePlaceOrder = async () => {
-    if (!form.shipping_address.trim()) { toast('Please enter a shipping address', 'error'); return }
-    setPlacing(true)
-
-    const orderItems = items.map(i => ({ product_id: i.product_id, quantity: i.quantity }))
-    const finalAmount = discountedTotal
-
-    // Use Razorpay for card/netbanking/wallet/upi (non-COD)
-    if (form.payment_method !== 'cod' && form.payment_method !== 'upi_manual') {
-      pay({
-        amount:           finalAmount,
-        items:            orderItems,
-        shipping_address: form.shipping_address,
-        notes:            form.notes,
-        scheduled_date:   form.scheduled_date || undefined,
-        coupon_id:        couponData?.coupon_id,
-        userName:         user?.name,
-        userEmail:        user?.email,
-        userPhone:        user?.phone,
-        onSuccess: async (verified) => {
-          await refetch()
-          toast('Payment successful! Order placed 🎉', 'success')
-          setCheckoutOpen(false)
-          setCouponData(null)
-          setCouponCode('')
-          setPlacing(false)
-          navigate('/orders')
-        },
-        onFailure: (msg) => {
-          toast(msg || 'Payment failed', 'error')
-          setPlacing(false)
-        },
-      })
-      return
-    }
-
-    // COD or manual UPI
-    try {
-      await api.post('/orders', {
-        items:            orderItems,
-        shipping_address: form.shipping_address,
-        notes:            form.notes,
-        payment_method:   form.payment_method,
-        upi_ref:          form.payment_method === 'upi_manual' ? form.upi_ref : undefined,
-        scheduled_date:   form.scheduled_date || undefined,
-        coupon_id:        couponData?.coupon_id,
-      })
-      await refetch()
-      toast('Order placed successfully! 🎉', 'success')
-      setCheckoutOpen(false)
-      setCouponData(null)
-      setCouponCode('')
-      navigate('/orders')
-    } catch (err) {
-      toast(err.response?.data?.message || 'Order failed', 'error')
-    } finally { setPlacing(false) }
   }
 
   if (items.length === 0) {
@@ -149,6 +73,7 @@ export default function CartPage() {
       </h1>
 
       <div className="grid lg:grid-cols-3 gap-6">
+
         {/* Items list */}
         <div className="lg:col-span-2 space-y-3">
           {items.map(item => (
@@ -214,18 +139,12 @@ export default function CartPage() {
               </div>
             )}
 
-            {couponData && (
-              <div className="border-t border-gray-100 pt-2.5 flex justify-between font-bold text-[#1a1f2e]">
-                <span>Total</span>
-                <span className="text-[#f59e0b]">₹{discountedTotal.toLocaleString('en-IN')}</span>
-              </div>
-            )}
-            {!couponData && (
-              <div className="border-t border-gray-100 pt-2.5 flex justify-between font-bold text-[#1a1f2e]">
-                <span>Total</span>
-                <span>₹{parseFloat(total).toLocaleString('en-IN')}</span>
-              </div>
-            )}
+            <div className="border-t border-gray-100 pt-2.5 flex justify-between font-bold text-[#1a1f2e]">
+              <span>Total</span>
+              <span className={couponData ? 'text-[#f59e0b]' : ''}>
+                ₹{discountedTotal.toLocaleString('en-IN')}
+              </span>
+            </div>
           </div>
 
           {/* Coupon input */}
@@ -245,8 +164,7 @@ export default function CartPage() {
                 <button
                   onClick={handleApplyCoupon}
                   disabled={!couponCode.trim() || couponLoading}
-                  className="btn-ghost text-sm px-3 border border-gray-200 disabled:opacity-50"
-                >
+                  className="btn-ghost text-sm px-3 border border-gray-200 disabled:opacity-50">
                   {couponLoading ? '…' : 'Apply'}
                 </button>
               </div>
@@ -265,7 +183,9 @@ export default function CartPage() {
             </div>
           )}
 
-          <button onClick={() => setCheckoutOpen(true)} className="btn-accent w-full py-3 text-base">
+          <button
+            onClick={() => navigate('/checkout', { state: { couponData } })}
+            className="btn-accent w-full py-3 text-base">
             Checkout <ArrowRight size={18} />
           </button>
           <Link to="/products" className="block text-center text-sm text-[#6b7280] hover:text-[#1a1f2e]">
@@ -273,81 +193,6 @@ export default function CartPage() {
           </Link>
         </div>
       </div>
-
-      {/* Checkout Modal */}
-      <Modal open={checkoutOpen} onClose={() => setCheckoutOpen(false)} title="Complete Your Order" size="md">
-        <div className="space-y-4">
-          <TextareaField label="Shipping Address *"
-            placeholder="Street, City, State, ZIP, Country"
-            value={form.shipping_address}
-            onChange={e => setForm(p => ({ ...p, shipping_address: e.target.value }))} />
-          <SelectField label="Payment Method"
-            value={form.payment_method}
-            onChange={e => setForm(p => ({ ...p, payment_method: e.target.value, upi_ref: '' }))}>
-            <option value="card">Credit / Debit Card (Razorpay)</option>
-            <option value="upi">UPI via Razorpay</option>
-            <option value="netbanking">Net Banking (Razorpay)</option>
-            <option value="wallet">Wallet (Razorpay)</option>
-            <option value="upi_manual">UPI — Manual / QR</option>
-            <option value="cod">Cash on Delivery</option>
-          </SelectField>
-
-          {form.payment_method === 'upi_manual' && (() => {
-            const upiAmount = discountedTotal.toFixed(2)
-            const upiUri = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(SHOP_NAME)}&am=${upiAmount}&cu=INR`
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(upiUri)}&size=180x180&margin=10`
-            return (
-              <div className="rounded-xl border border-green-200 bg-green-50 p-4 space-y-3">
-                <p className="text-sm font-semibold text-green-800">Pay ₹{upiAmount} via UPI (0% fee)</p>
-                <a href={upiUri}
-                  className="flex items-center justify-center gap-2 bg-green-600 text-white text-sm font-semibold py-2.5 px-4 rounded-xl hover:bg-green-700 transition-colors md:hidden">
-                  Open PhonePe / GPay / Paytm
-                </a>
-                <div className="hidden md:flex flex-col items-center gap-2">
-                  <p className="text-xs text-green-700 font-medium">Scan with any UPI app on your phone</p>
-                  <img src={qrUrl} alt="UPI QR Code" className="rounded-xl border-2 border-green-200 bg-white p-1" width={180} height={180} />
-                </div>
-                <p className="text-xs text-green-700">After paying, paste your UPI transaction ID below:</p>
-                <InputField placeholder="e.g. 316987654321" value={form.upi_ref}
-                  onChange={e => setForm(p => ({ ...p, upi_ref: e.target.value }))} />
-              </div>
-            )
-          })()}
-
-          <InputField label="Schedule Delivery (optional)" type="date"
-            value={form.scheduled_date}
-            min={new Date().toISOString().split('T')[0]}
-            onChange={e => setForm(p => ({ ...p, scheduled_date: e.target.value }))} />
-          <InputField label="Order Notes (optional)" placeholder="Leave a note..."
-            value={form.notes}
-            onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} />
-
-          {/* Summary */}
-          <div className="bg-gray-50 rounded-xl p-4 text-sm space-y-1.5">
-            <div className="flex justify-between text-[#6b7280]">
-              <span>Subtotal ({items.length} item{items.length !== 1 ? 's' : ''})</span>
-              <span>₹{parseFloat(total).toLocaleString('en-IN')}</span>
-            </div>
-            {couponData && (
-              <div className="flex justify-between text-green-700 font-medium">
-                <span>Coupon ({couponData.code})</span>
-                <span>−₹{couponData.discount_amount.toLocaleString('en-IN')}</span>
-              </div>
-            )}
-            <div className="flex justify-between font-bold text-[#1a1f2e] border-t border-gray-200 pt-1.5">
-              <span>You pay</span>
-              <span className="text-[#f59e0b]">₹{discountedTotal.toLocaleString('en-IN')}</span>
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <button className="btn-ghost flex-1" onClick={() => setCheckoutOpen(false)}>Back to Cart</button>
-            <button className="btn-accent flex-1 py-3 flex items-center justify-center gap-2" onClick={handlePlaceOrder} disabled={placing}>
-              {placing ? 'Processing…' : (<><CreditCard size={16}/> Pay ₹{discountedTotal.toLocaleString('en-IN')}</>)}
-            </button>
-          </div>
-        </div>
-      </Modal>
     </div>
   )
 }

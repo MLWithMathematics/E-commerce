@@ -27,17 +27,20 @@ const ResetPasswordPage  = lazy(() => import('./pages/ResetPasswordPage'))
 const CustomerDashboard = lazy(() => import('./pages/customer/Dashboard'))
 const OrdersPage        = lazy(() => import('./pages/customer/Orders'))
 const CartPage          = lazy(() => import('./pages/CartPage'))
+const CheckoutPage      = lazy(() => import('./pages/CheckoutPage'))
 const ProfilePage       = lazy(() => import('./pages/ProfilePage'))
 const WishlistPage      = lazy(() => import('./pages/WishlistPage'))
 
 // ── Lazily loaded admin pages ─────────────────────────────────
-const AdminDashboard  = lazy(() => import('./pages/admin/Dashboard'))
-const AdminProducts   = lazy(() => import('./pages/admin/Products'))
-const AdminOrders     = lazy(() => import('./pages/admin/Orders'))
-const AdminInventory  = lazy(() => import('./pages/admin/Inventory'))
-const AdminPayments   = lazy(() => import('./pages/admin/Payments'))
-const AdminCoupons    = lazy(() => import('./pages/admin/Coupons'))
-const AdminReturns    = lazy(() => import('./pages/admin/Returns'))
+const AdminDashboard    = lazy(() => import('./pages/admin/Dashboard'))
+const AdminProducts     = lazy(() => import('./pages/admin/Products'))
+const AdminOrders       = lazy(() => import('./pages/admin/Orders'))
+const AdminInventory    = lazy(() => import('./pages/admin/Inventory'))
+const AdminPayments     = lazy(() => import('./pages/admin/Payments'))
+const AdminCategories   = lazy(() => import('./pages/admin/Categories'))
+const AdminAbout        = lazy(() => import('./pages/admin/About'))
+const AdminCoupons      = lazy(() => import('./pages/admin/Coupons'))
+const AdminReturns      = lazy(() => import('./pages/admin/Returns'))
 
 // ── Layouts ───────────────────────────────────────────────────
 function PublicLayout() {
@@ -161,6 +164,7 @@ export default function App() {
                     <Route path="/orders"    element={<OrdersPage />} />
                     <Route path="/wishlist"  element={<WishlistPage />} />
                     <Route path="/cart"      element={<CartPage />} />
+                    <Route path="/checkout"  element={<CheckoutPage />} />
                     <Route path="/profile"   element={<ProfilePage />} />
                   </Route>
 
@@ -170,7 +174,9 @@ export default function App() {
                     <Route path="/admin/products"   element={<AdminProducts />} />
                     <Route path="/admin/orders"     element={<AdminOrders />} />
                     <Route path="/admin/inventory"  element={<AdminInventory />} />
-                    <Route path="/admin/payments"   element={<AdminPayments />} />
+                    <Route path="/admin/payments"    element={<AdminPayments />} />
+                    <Route path="/admin/categories" element={<AdminCategories />} />
+                    <Route path="/admin/about"      element={<AdminAbout />} />
                     <Route path="/admin/coupons"    element={<AdminCoupons />} />
                     <Route path="/admin/returns"    element={<AdminReturns />} />
                     <Route path="/admin/analytics"  element={<Navigate to="/admin/dashboard" replace />} />

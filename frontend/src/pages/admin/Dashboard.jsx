@@ -13,7 +13,7 @@ const COLORS = ['#1a1f2e','#f59e0b','#10b981','#ef4444','#6366f1','#ec4899']
 
 export default function AdminDashboard() {
   const { user } = useAuth()
-  const isSuperAdmin = user?.role === 'superAdmin'
+  const isSuperAdmin = user?.role === 'admin'
   const [stats, setStats]   = useState(null)
   const [orders, setOrders] = useState({ monthly:[], by_status:[], recent:[] })
   const [payments, setPayments] = useState({ monthly:[], by_method:[], by_status:[] })
