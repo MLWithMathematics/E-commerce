@@ -41,6 +41,8 @@
 - 🏷️ Discount coupon support with automatic calculations
 - ↩️ Easy return management system
 - 🏠 Multiple saved shipping addresses for faster checkout
+- 💸 Manual UPI payments via dynamic QR codes with transaction tracking
+- 🛒 Dedicated multi-step checkout flow for better conversion
 
 ### Seller / Admin Features
 - 📈 Admin dashboard with revenue charts, order stats, top products
@@ -131,6 +133,7 @@ Wipsom/
 │   │   │   ├── AboutPage.jsx      # CMS-driven about page
 │   │   │   ├── ProductsPage.jsx   # Filterable/sortable product grid
 │   │   │   ├── ProductDetailPage.jsx
+│   │   │   ├── CheckoutPage.jsx    # Manual UPI & Razorpay flow
 │   │   │   ├── StoreLocatorPage.jsx  # Interactive store map
 │   │   │   ├── CartPage.jsx
 │   │   │   ├── WishlistPage.jsx
@@ -369,6 +372,7 @@ VITE_API_URL=https://your-render-app.onrender.com/api
 | POST | `/api/addresses` | User | Add new address |
 | POST | `/api/razorpay/order` | User | Create Razorpay order |
 | POST | `/api/razorpay/verify` | User | Verify payment signature |
+| POST | `/api/coupons/apply` | User | Validate and apply discount code |
 | GET | `/api/coupons` | Public | List active coupons |
 | POST | `/api/returns` | User | Request order return |
 | GET | `/api/health` | Public | Health check |
