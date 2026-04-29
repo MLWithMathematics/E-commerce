@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, Suspense, lazy } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import { ToastProvider } from './context/ToastContext'
@@ -9,34 +9,35 @@ import Sidebar from './components/Sidebar'
 import { PageLoader } from './components/ui'
 import { Menu } from 'lucide-react'
 
-// Pages - Public
-import HomePage from './pages/HomePage'
-import AboutPage from './pages/AboutPage'
-import LoginPage from './pages/LoginPage'
-import SignupPage from './pages/SignupPage'
-import ProductsPage from './pages/ProductsPage'
-import ProductDetailPage from './pages/ProductDetailPage'
-import StoreLocatorPage from './pages/StoreLocatorPage'
+// ── Eagerly loaded public pages (needed on first paint) ───────
+import HomePage        from './pages/HomePage'
+import LoginPage       from './pages/LoginPage'
+import SignupPage      from './pages/SignupPage'
 import VerifyEmailPage from './pages/VerifyEmailPage'
-import ForgotPasswordPage from './pages/ForgotPasswordPage'
-import ResetPasswordPage from './pages/ResetPasswordPage'
 
-// Pages - Customer
-import CustomerDashboard from './pages/customer/Dashboard'
-import OrdersPage from './pages/customer/Orders'
-import CartPage from './pages/CartPage'
-import ProfilePage from './pages/ProfilePage'
-import WishlistPage from './pages/WishlistPage'
+// ── Lazily loaded public pages ────────────────────────────────
+const AboutPage         = lazy(() => import('./pages/AboutPage'))
+const ProductsPage      = lazy(() => import('./pages/ProductsPage'))
+const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage'))
+const StoreLocatorPage  = lazy(() => import('./pages/StoreLocatorPage'))
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
+const ResetPasswordPage  = lazy(() => import('./pages/ResetPasswordPage'))
 
-// Pages - Admin
-import AdminDashboard from './pages/admin/Dashboard'
-import AdminProducts from './pages/admin/Products'
-import AdminOrders from './pages/admin/Orders'
-import AdminInventory from './pages/admin/Inventory'
-import AdminPayments from './pages/admin/Payments'
-import AdminCoupons from './pages/admin/Coupons'
-import AdminReturns from './pages/admin/Returns'
-// AdminCategories and AdminAbout removed from seller dashboard (fixes #5, #6)
+// ── Lazily loaded customer pages ──────────────────────────────
+const CustomerDashboard = lazy(() => import('./pages/customer/Dashboard'))
+const OrdersPage        = lazy(() => import('./pages/customer/Orders'))
+const CartPage          = lazy(() => import('./pages/CartPage'))
+const ProfilePage       = lazy(() => import('./pages/ProfilePage'))
+const WishlistPage      = lazy(() => import('./pages/WishlistPage'))
+
+// ── Lazily loaded admin pages ─────────────────────────────────
+const AdminDashboard  = lazy(() => import('./pages/admin/Dashboard'))
+const AdminProducts   = lazy(() => import('./pages/admin/Products'))
+const AdminOrders     = lazy(() => import('./pages/admin/Orders'))
+const AdminInventory  = lazy(() => import('./pages/admin/Inventory'))
+const AdminPayments   = lazy(() => import('./pages/admin/Payments'))
+const AdminCoupons    = lazy(() => import('./pages/admin/Coupons'))
+const AdminReturns    = lazy(() => import('./pages/admin/Returns'))
 
 // ── Layouts ───────────────────────────────────────────────────
 function PublicLayout() {
@@ -54,7 +55,7 @@ function PublicLayout() {
 }
 
 function AppLayout() {
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed]   = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
@@ -102,8 +103,8 @@ function RequireAuth({ children, adminOnly = false }) {
   return children
 }
 
-// ── WhatsApp Floating Button ────────────────────────────────
-const WA_NUMBER = '914578646213'  // ← replace: country code + number, no +
+// ── WhatsApp Floating Button ──────────────────────────────────
+const WA_NUMBER  = '914578646213'
 const WA_MESSAGE = encodeURIComponent('Hi! I have a question about my order.')
 
 function WhatsAppButton() {
@@ -138,47 +139,47 @@ export default function App() {
         <CartProvider>
           <WishlistProvider>
             <ToastProvider>
-            <Routes>
-              {/* Public pages */}
-              <Route element={<PublicLayout />}>
-                <Route path="/"              element={<HomePage />} />
-                <Route path="/about"         element={<AboutPage />} />
-                <Route path="/store-locator" element={<StoreLocatorPage />} />
-                <Route path="/login"         element={<LoginPage />} />
-                <Route path="/signup"        element={<SignupPage />} />
-                <Route path="/verify-email"  element={<VerifyEmailPage />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/reset-password"  element={<ResetPasswordPage />} />
-                <Route path="/products"      element={<ProductsPage />} />
-                <Route path="/products/:id"  element={<ProductDetailPage />} />
-              </Route>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  {/* Public pages */}
+                  <Route element={<PublicLayout />}>
+                    <Route path="/"               element={<HomePage />} />
+                    <Route path="/about"          element={<AboutPage />} />
+                    <Route path="/store-locator"  element={<StoreLocatorPage />} />
+                    <Route path="/login"          element={<LoginPage />} />
+                    <Route path="/signup"         element={<SignupPage />} />
+                    <Route path="/verify-email"   element={<VerifyEmailPage />} />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                    <Route path="/reset-password"  element={<ResetPasswordPage />} />
+                    <Route path="/products"       element={<ProductsPage />} />
+                    <Route path="/products/:id"   element={<ProductDetailPage />} />
+                  </Route>
 
-              {/* Authenticated pages */}
-              <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
-                <Route path="/dashboard" element={<CustomerDashboard />} />
-                <Route path="/orders"    element={<OrdersPage />} />
-                <Route path="/wishlist"  element={<WishlistPage />} />
-                <Route path="/cart"      element={<CartPage />} />
-                <Route path="/profile"   element={<ProfilePage />} />
-              </Route>
+                  {/* Authenticated customer pages */}
+                  <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
+                    <Route path="/dashboard" element={<CustomerDashboard />} />
+                    <Route path="/orders"    element={<OrdersPage />} />
+                    <Route path="/wishlist"  element={<WishlistPage />} />
+                    <Route path="/cart"      element={<CartPage />} />
+                    <Route path="/profile"   element={<ProfilePage />} />
+                  </Route>
 
-              {/* Admin pages */}
-              <Route element={<RequireAuth adminOnly><AppLayout /></RequireAuth>}>
-                <Route path="/admin/dashboard"  element={<AdminDashboard />} />
-                <Route path="/admin/products"   element={<AdminProducts />} />
-                <Route path="/admin/orders"     element={<AdminOrders />} />
-                <Route path="/admin/inventory"  element={<AdminInventory />} />
-                <Route path="/admin/payments"   element={<AdminPayments />} />
-                <Route path="/admin/coupons"    element={<AdminCoupons />} />
-                <Route path="/admin/returns"    element={<AdminReturns />} />
-                {/* Fix 2: Analytics had no page — redirect to dashboard which has all charts */}
-                <Route path="/admin/analytics" element={<Navigate to="/admin/dashboard" replace />} />
-                {/* Fix 6: About editor removed from seller panel */}
-              </Route>
+                  {/* Admin pages */}
+                  <Route element={<RequireAuth adminOnly><AppLayout /></RequireAuth>}>
+                    <Route path="/admin/dashboard"  element={<AdminDashboard />} />
+                    <Route path="/admin/products"   element={<AdminProducts />} />
+                    <Route path="/admin/orders"     element={<AdminOrders />} />
+                    <Route path="/admin/inventory"  element={<AdminInventory />} />
+                    <Route path="/admin/payments"   element={<AdminPayments />} />
+                    <Route path="/admin/coupons"    element={<AdminCoupons />} />
+                    <Route path="/admin/returns"    element={<AdminReturns />} />
+                    <Route path="/admin/analytics"  element={<Navigate to="/admin/dashboard" replace />} />
+                  </Route>
 
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-            <WhatsAppButton />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
+              <WhatsAppButton />
             </ToastProvider>
           </WishlistProvider>
         </CartProvider>

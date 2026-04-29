@@ -186,7 +186,7 @@ export function LoginPage() {
           {/* Demo credentials */}
           <div className="mt-4 p-3 bg-gray-50 rounded-xl text-xs text-[#6b7280]">
             <p className="font-semibold text-[#1a1f2e] mb-1">Demo admin:</p>
-            <p>admin@shopverse.com · Admin@1234</p>
+            <p>admin@wipsom.com · Admin@1234</p>
           </div>
         </div>
       </div>

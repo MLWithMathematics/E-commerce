@@ -7,6 +7,9 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { useWishlist } from '../context/WishlistContext'
 import { PageLoader, StarRating, Price, StatusBadge, Modal, InputField, TextareaField } from '../components/ui'
+import SEO from '../components/SEO'
+import RecentlyViewed from '../components/RecentlyViewed'
+import { useRecentlyViewed } from '../hooks/useRecentlyViewed'
 
 export default function ProductDetailPage() {
   const { id } = useParams()
@@ -15,6 +18,7 @@ export default function ProductDetailPage() {
   const { user } = useAuth()
   const { toast } = useToast()
   const { isWishlisted, toggle: toggleWishlist } = useWishlist()
+  const { push: pushRecentlyViewed, items: recentlyViewed } = useRecentlyViewed()
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [qty, setQty] = useState(1)
@@ -52,6 +56,11 @@ export default function ProductDetailPage() {
   }
 
   useEffect(() => { fetchProduct() }, [id])
+
+  // Track view after product loads
+  useEffect(() => {
+    if (product) pushRecentlyViewed(product)
+  }, [product?.id])
 
   if (loading) return <PageLoader />
   if (!product) return null
@@ -93,6 +102,15 @@ export default function ProductDetailPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <SEO
+        title={product.name}
+        description={product.description || `Buy ${product.name} at the best price on WipSom.`}
+        image={product.image_url}
+        type="product"
+        canonical={`/products/${product.id}`}
+        price={product.price}
+        availability={product.stock > 0}
+      />
       <button onClick={() => navigate(-1)} className="btn-ghost mb-6 -ml-2">
         <ArrowLeft size={16} /> Back
       </button>
@@ -276,6 +294,9 @@ export default function ProductDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Recently Viewed */}
+      <RecentlyViewed items={recentlyViewed} exclude={parseInt(id)} />
 
       {/* Write Review Modal */}
       <Modal open={reviewOpen} onClose={() => setReviewOpen(false)} title="Write a Review" size="md">

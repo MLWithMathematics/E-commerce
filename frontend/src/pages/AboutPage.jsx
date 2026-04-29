@@ -34,7 +34,7 @@ const FALLBACK = {
   contact: {
     title: 'Get in Touch',
     body:  'support@wipsom.in',
-    meta:  { phone: '+91 95874 56438', address: '42, Commerce Tower, Sector 18, Gurugram, Haryana 122015' },
+    meta:  { phone: '+91 9597545789', address: '42, Commerce Tower, Sector 18, Gurugram, Haryana 122015' },
   },
 }
 

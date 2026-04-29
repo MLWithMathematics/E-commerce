@@ -1,5 +1,6 @@
 import db from '../config/db.js';
 import nodemailer from 'nodemailer';
+import { emitOrderUpdate } from '../socket/index.js';
 
 // helper — superAdmin sees everything; seller sees only their own scope
 const isSuperAdmin = (user) => user?.role === 'admin';
@@ -305,7 +306,17 @@ export const updateOrderStatus = async (req, res) => {
     if (status === 'delivered') {
       await db.query("UPDATE payments SET status='completed' WHERE order_id=$1", [req.params.id]);
     }
-    res.json(rows[0]);
+
+    // Real-time push to customer
+    const updated = rows[0];
+    emitOrderUpdate(updated.id, updated.user_id, {
+      order_id:        updated.id,
+      status:          updated.status,
+      tracking_number: updated.tracking_number,
+      updated_at:      updated.updated_at,
+    });
+
+    res.json(updated);
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }

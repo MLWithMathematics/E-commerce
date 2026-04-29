@@ -1,14 +1,18 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { format } from 'date-fns'
-import { RefreshCw, XCircle, Calendar, ChevronDown, ChevronUp, Package, RotateCcw } from 'lucide-react'
+import { RefreshCw, XCircle, Calendar, ChevronDown, ChevronUp, Package, RotateCcw, Zap } from 'lucide-react'
 import api from '../../api/client'
 import { useToast } from '../../context/ToastContext'
+import { useAuth } from '../../context/AuthContext'
 import { PageLoader, StatusBadge, EmptyState, Modal, ConfirmDialog, TextareaField } from '../../components/ui'
+import { useOrderSocket } from '../../hooks/useOrderSocket'
+import SEO from '../../components/SEO'
 
 const STATUS_FILTERS = ['all','pending','confirmed','processing','shipped','delivered','cancelled','refunded']
 
 export default function OrdersPage() {
   const { toast } = useToast()
+  const { user, token } = useAuth()
   const [orders, setOrders]   = useState([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
@@ -22,7 +26,7 @@ export default function OrdersPage() {
   const [returnReason, setReturnReason] = useState('')
   const [returnSaving, setReturnSaving] = useState(false)
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     setLoading(true)
     try {
       const params = statusFilter !== 'all' ? `?status=${statusFilter}` : ''
@@ -30,9 +34,21 @@ export default function OrdersPage() {
       setOrders(data.orders)
     } catch { toast('Failed to load orders', 'error') }
     finally { setLoading(false) }
-  }
+  }, [statusFilter])
 
-  useEffect(() => { fetchOrders() }, [statusFilter])
+  useEffect(() => { fetchOrders() }, [fetchOrders])
+
+  // Real-time order status updates via Socket.io
+  const handleOrderUpdate = useCallback((payload) => {
+    setOrders(prev => prev.map(o =>
+      o.id === payload.order_id
+        ? { ...o, status: payload.status, tracking_number: payload.tracking_number ?? o.tracking_number }
+        : o
+    ))
+    toast(`Order #${payload.order_id} is now ${payload.status} ⚡`, 'info')
+  }, [toast])
+
+  useOrderSocket(token, handleOrderUpdate)
 
   const handleCancel = async (orderId) => {
     try {
@@ -75,6 +91,7 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-5 anim-fade-up">
+      <SEO title="My Orders" description="Track and manage your WipSom orders." noindex />
       <div className="page-header">
         <h1 className="page-title">My Orders</h1>
       </div>

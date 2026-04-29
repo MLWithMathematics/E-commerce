@@ -1,17 +1,20 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Tag, X, CheckCircle2 } from 'lucide-react'
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Tag, X, CheckCircle2, CreditCard } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/client'
 import { EmptyState, Modal, InputField, SelectField, TextareaField } from '../components/ui'
+import { useRazorpay } from '../hooks/useRazorpay'
+import SEO from '../components/SEO'
 
 export default function CartPage() {
   const { items, total, upsert, remove, clear, refetch } = useCart()
   const { toast } = useToast()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { pay } = useRazorpay()
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [placing, setPlacing] = useState(false)
 
@@ -70,16 +73,49 @@ export default function CartPage() {
   const handlePlaceOrder = async () => {
     if (!form.shipping_address.trim()) { toast('Please enter a shipping address', 'error'); return }
     setPlacing(true)
-    try {
-      const orderItems = items.map(i => ({ product_id: i.product_id, quantity: i.quantity }))
-      await api.post('/orders', {
-        items: orderItems,
+
+    const orderItems = items.map(i => ({ product_id: i.product_id, quantity: i.quantity }))
+    const finalAmount = discountedTotal
+
+    // Use Razorpay for card/netbanking/wallet/upi (non-COD)
+    if (form.payment_method !== 'cod' && form.payment_method !== 'upi_manual') {
+      pay({
+        amount:           finalAmount,
+        items:            orderItems,
         shipping_address: form.shipping_address,
-        notes: form.notes,
-        payment_method: form.payment_method,
-        upi_ref: form.payment_method === 'upi' ? form.upi_ref : undefined,
-        scheduled_date: form.scheduled_date || undefined,
-        coupon_id: couponData?.coupon_id,
+        notes:            form.notes,
+        scheduled_date:   form.scheduled_date || undefined,
+        coupon_id:        couponData?.coupon_id,
+        userName:         user?.name,
+        userEmail:        user?.email,
+        userPhone:        user?.phone,
+        onSuccess: async (verified) => {
+          await refetch()
+          toast('Payment successful! Order placed 🎉', 'success')
+          setCheckoutOpen(false)
+          setCouponData(null)
+          setCouponCode('')
+          setPlacing(false)
+          navigate('/orders')
+        },
+        onFailure: (msg) => {
+          toast(msg || 'Payment failed', 'error')
+          setPlacing(false)
+        },
+      })
+      return
+    }
+
+    // COD or manual UPI
+    try {
+      await api.post('/orders', {
+        items:            orderItems,
+        shipping_address: form.shipping_address,
+        notes:            form.notes,
+        payment_method:   form.payment_method,
+        upi_ref:          form.payment_method === 'upi_manual' ? form.upi_ref : undefined,
+        scheduled_date:   form.scheduled_date || undefined,
+        coupon_id:        couponData?.coupon_id,
       })
       await refetch()
       toast('Order placed successfully! 🎉', 'success')
@@ -104,6 +140,7 @@ export default function CartPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 anim-fade-up">
+      <SEO title="My Cart" description="Review your cart and place your order on WipSom." noindex />
       <h1 className="page-title mb-6">
         Shopping Cart{' '}
         <span className="text-[#6b7280] font-body text-base font-normal">
@@ -247,14 +284,15 @@ export default function CartPage() {
           <SelectField label="Payment Method"
             value={form.payment_method}
             onChange={e => setForm(p => ({ ...p, payment_method: e.target.value, upi_ref: '' }))}>
-            <option value="card">Credit / Debit Card</option>
-            <option value="upi">UPI (0% fee)</option>
-            <option value="netbanking">Net Banking</option>
-            <option value="wallet">Wallet</option>
+            <option value="card">Credit / Debit Card (Razorpay)</option>
+            <option value="upi">UPI via Razorpay</option>
+            <option value="netbanking">Net Banking (Razorpay)</option>
+            <option value="wallet">Wallet (Razorpay)</option>
+            <option value="upi_manual">UPI — Manual / QR</option>
             <option value="cod">Cash on Delivery</option>
           </SelectField>
 
-          {form.payment_method === 'upi' && (() => {
+          {form.payment_method === 'upi_manual' && (() => {
             const upiAmount = discountedTotal.toFixed(2)
             const upiUri = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(SHOP_NAME)}&am=${upiAmount}&cu=INR`
             const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(upiUri)}&size=180x180&margin=10`
@@ -304,8 +342,8 @@ export default function CartPage() {
 
           <div className="flex gap-3">
             <button className="btn-ghost flex-1" onClick={() => setCheckoutOpen(false)}>Back to Cart</button>
-            <button className="btn-accent flex-1 py-3" onClick={handlePlaceOrder} disabled={placing}>
-              {placing ? 'Placing…' : `Pay ₹${discountedTotal.toLocaleString('en-IN')}`}
+            <button className="btn-accent flex-1 py-3 flex items-center justify-center gap-2" onClick={handlePlaceOrder} disabled={placing}>
+              {placing ? 'Processing…' : (<><CreditCard size={16}/> Pay ₹{discountedTotal.toLocaleString('en-IN')}</>)}
             </button>
           </div>
         </div>

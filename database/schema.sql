@@ -148,7 +148,7 @@ CREATE TRIGGER trg_orders_upd  BEFORE UPDATE ON orders   FOR EACH ROW EXECUTE FU
 
 -- ── Seed: Default About Sections ─────────────────────────────
 INSERT INTO about_content (section, title, body, meta) VALUES
-('hero',     'Welcome to ShopVerse',
+('hero',     'Welcome to WipSom',
  'Your ultimate destination for premium products across every category.',
  '{"tagline":"Shop Smarter. Live Better.","cta":"Start Shopping"}'),
 ('mission',  'Our Mission',
@@ -161,8 +161,8 @@ INSERT INTO about_content (section, title, body, meta) VALUES
  '',
  '{"customers":"50,000+","sellers":"1,200+","products":"100,000+","countries":"25+"}'),
 ('contact',  'Get In Touch',
- 'support@shopverse.com',
- '{"phone":"+1 800 SHOPVERSE","address":"123 Commerce St, Business City"}');
+ 'support@wipsom.com',
+ '{"phone":"+1 800 WIPSOM","address":"123 Commerce St, Business City"}');
 
 -- ── Seed: Categories ─────────────────────────────────────────
 INSERT INTO categories (name, description, image_url) VALUES
@@ -177,7 +177,7 @@ INSERT INTO categories (name, description, image_url) VALUES
 
 -- ── Seed: Admin User (password: Admin@1234) ──────────────────
 INSERT INTO users (name, email, password, role) VALUES
-('Admin', 'admin@shopverse.com',
+('Admin', 'admin@wipsom.com',
  '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5xuAHZCTVUo8q',
  'admin');
 

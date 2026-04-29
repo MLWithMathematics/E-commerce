@@ -33,6 +33,14 @@
 - ✅ Email verification on signup (configurable)
 - 💬 Floating WhatsApp support button for instant customer service
 - 🚚 Live shipping ETD estimates powered by Shiprocket
+- 💳 Native Razorpay payment gateway with secure webhook verification
+- 🔔 Real-time order tracking notifications via Socket.io
+- 💖 Wishlist system to save favorite products
+- 🕒 Recently viewed products history
+- 🔑 Forgot/Reset password flow via secure email links
+- 🏷️ Discount coupon support with automatic calculations
+- ↩️ Easy return management system
+- 🏠 Multiple saved shipping addresses for faster checkout
 
 ### Seller / Admin Features
 - 📈 Admin dashboard with revenue charts, order stats, top products
@@ -43,6 +51,10 @@
 - 💳 Payment tracking — received vs pending
 - ✏️ Live About page editor (CMS)
 - 📊 Automated Order Syncing to Google Sheets for real-time inventory/order tracking
+- 📧 Automated Cart Abandonment recovery email system (Cron jobs)
+- 🎟️ Coupon management — create, edit, and track usage
+- ↩️ Return request management and status tracking
+- 📈 Advanced analytics dashboard with revenue, orders, and customer stats
 - 👥 Multi-role user system (customer / seller / admin)
 
 ---
@@ -55,15 +67,19 @@
 | **Backend** | Node.js 18, Express.js (ESM) |
 | **Database** | PostgreSQL 14+ |
 | **Authentication** | JWT + bcryptjs |
-| **Email** | Nodemailer (SMTP) |
+| **Payments** | Razorpay |
+| **Real-time** | Socket.io |
+| **Automation** | node-cron (Background jobs) |
+| **Email** | Brevo / SMTP (Nodemailer) |
 | **Shipping** | Shiprocket API |
 | **Sync** | Google Sheets API (googleapis) |
+| **SEO** | react-helmet-async |
 | **Charts** | Recharts |
 | **Icons** | Lucide React |
 | **HTTP Client** | Axios |
 | **Frontend Host** | Vercel |
 | **Backend Host** | Render |
-| **DB Host** | Render PostgreSQL |
+| **DB Host** | Supabase (PostgreSQL) |
 
 ---
 
@@ -75,10 +91,15 @@ Wipsom/
 │   ├── config/
 │   │   └── db.js                  # PostgreSQL pool (supports DATABASE_URL + individual vars)
 │   ├── controllers/
-│   │   ├── authController.js      # Signup, login, email verify, profile
+│   │   ├── authController.js      # Signup, login, password reset, profile
 │   │   ├── productController.js   # Products CRUD, inventory, suggestions
 │   │   ├── orderController.js     # Orders, cancel, reorder, reschedule
-│   │   └── miscControllers.js     # Cart, payments, about, dashboard stats
+│   │   ├── razorpayController.js  # Razorpay orders and webhook verification
+│   │   ├── couponController.js    # Discount code management
+│   │   ├── returnController.js    # Order returns and status updates
+│   │   ├── wishlistController.js  # User favorites
+│   │   ├── addressController.js   # Multiple shipping addresses
+│   │   └── statsController.js     # Dashboard analytics
 │   ├── middleware/
 │   │   └── auth.js                # JWT verify + role guards (admin/seller)
 │   ├── routes/
@@ -99,6 +120,7 @@ Wipsom/
 │   │   ├── context/
 │   │   │   ├── AuthContext.jsx    # Auth state, login, logout, signup
 │   │   │   ├── CartContext.jsx    # Cart state management
+│   │   │   ├── WishlistContext.jsx# Wishlist state
 │   │   │   └── ToastContext.jsx   # Toast notification system
 │   │   ├── components/
 │   │   │   ├── Navbar.jsx         # Responsive nav + live search suggestions
@@ -111,9 +133,12 @@ Wipsom/
 │   │   │   ├── ProductDetailPage.jsx
 │   │   │   ├── StoreLocatorPage.jsx  # Interactive store map
 │   │   │   ├── CartPage.jsx
+│   │   │   ├── WishlistPage.jsx
 │   │   │   ├── ProfilePage.jsx
 │   │   │   ├── LoginPage.jsx
-│   │   │   ├── SignupPage.jsx      # Password strength meter + email verify
+│   │   │   ├── SignupPage.jsx
+│   │   │   ├── ForgotPasswordPage.jsx
+│   │   │   ├── ResetPasswordPage.jsx
 │   │   │   ├── VerifyEmailPage.jsx
 │   │   │   ├── customer/
 │   │   │   │   ├── Dashboard.jsx  # KPIs, charts, suggestions
@@ -135,14 +160,13 @@ Wipsom/
 │   └── package.json
 │
 ├── database/
-│   ├── schema.sql                 # Full database schema + seed data
-│   └── migration.sql              # Email verification migration
+│   ├── schema.sql                 # Core schema + seed data
+│   ├── migration.sql              # Email verification
+│   ├── migration_features.sql     # Coupons, wishlist, recent items
+│   ├── high_impact_features.sql   # Razorpay, real-time sync, analytics
+│   └── seller_isolation_migration.sql # Security & role-based isolation
 │
-├── railway.json                   # Railway build + start config
-├── nixpacks.toml                  # Railway Node 18 version lock
-├── .node-version                  # Node version for Railway
-├── Procfile                       # Fallback process config
-└── package.json                   # Root package (for Railway)
+├── package.json                   # Root package
 ```
 
 ---
@@ -166,14 +190,17 @@ cd wipsom
 psql -U postgres
 
 # Create database and user
-CREATE DATABASE shopverse;
-CREATE USER shopverse_user WITH PASSWORD 'yourpassword';
-GRANT ALL PRIVILEGES ON DATABASE shopverse TO shopverse_user;
+CREATE DATABASE wipsom;
+CREATE USER wipsom_user WITH PASSWORD 'yourpassword';
+GRANT ALL PRIVILEGES ON DATABASE wipsom TO wipsom_user;
 \q
 
-# Run schema
-psql -U shopverse_user -d shopverse -f database/schema.sql
-psql -U shopverse_user -d shopverse -f database/migration.sql
+# Run schema and migrations in order:
+psql -U wipsom_user -d wipsom -f database/schema.sql
+psql -U wipsom_user -d wipsom -f database/migration.sql
+psql -U wipsom_user -d wipsom -f database/migration_features.sql
+psql -U wipsom_user -d wipsom -f database/high_impact_features.sql
+psql -U wipsom_user -d wipsom -f database/seller_isolation_migration.sql
 ```
 
 ### 3. Configure backend
@@ -184,17 +211,24 @@ cp .env.example .env
 
 Edit `.env`:
 ```env
-PORT=5000
-NODE_ENV=development
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=shopverse
-DB_USER=shopverse_user
-DB_PASSWORD=yourpassword
+# Database (Local or Cloud)
+DATABASE_URL=postgresql://wipsom_user:yourpassword@localhost:5432/wipsom
+
+# Auth & Server
 JWT_SECRET=your-random-64-char-secret
 JWT_EXPIRES_IN=7d
+PORT=5000
+NODE_ENV=development
 CLIENT_URL=http://localhost:5173
-DEV_SKIP_EMAIL=true
+
+# Email (Brevo)
+BREVO_LOGIN=your@email.com
+BREVO_SMTP_KEY=your_key
+EMAIL_FROM=WipSom <no-reply@wipsom.com>
+
+# Payments & Shipping (Optional)
+RAZORPAY_KEY_ID=rzp_test_...
+RAZORPAY_KEY_SECRET=...
 ```
 
 ```bash
@@ -220,6 +254,13 @@ Frontend auto-proxies `/api` calls to `http://localhost:5000` via Vite config.
 
 ## 🚀 Deployment
 
+### Database → Supabase
+
+1. Create a new project at [supabase.com](https://supabase.com)
+2. Go to **Project Settings** → **Database** → **Connection String** → **URI**
+3. Copy the URI and use it as `DATABASE_URL` in Render.
+4. Go to the **SQL Editor** in Supabase and run the files in `database/` in the same order as local setup.
+
 ### Backend → Render
 
 1. Push code to GitHub
@@ -229,16 +270,7 @@ Frontend auto-proxies `/api` calls to `http://localhost:5000` via Vite config.
    - **Environment:** `Node`
    - **Build Command:** `npm install`
    - **Start Command:** `npm start`
-5. Add these environment variables in Render:
-
-```env
-NODE_ENV=production
-JWT_SECRET=<64-char random string>
-JWT_EXPIRES_IN=7d
-DEV_SKIP_EMAIL=true
-CLIENT_URL=https://your-vercel-app.vercel.app
-DATABASE_URL=postgres://... (get this from your Render DB)
-```
+5. Add environment variables (see Reference section).
 
 6. Render auto-deploys on every `git push`
 
@@ -255,12 +287,6 @@ VITE_API_URL=https://your-render-app.onrender.com/api
 ```
 4. Deploy
 
-### Run Database Schema on Render
-1. New → PostgreSQL on Render
-2. Once created, copy the **External Database URL**
-3. Use a tool like `psql` or the Render Dashboard "Shell" to run `database/schema.sql`, then `database/migration.sql`.
-   - Example: `psql "EXTERNAL_URL" -f database/schema.sql`
-
 ---
 
 ## 🔑 Environment Variables Reference
@@ -274,7 +300,16 @@ VITE_API_URL=https://your-render-app.onrender.com/api
 | `JWT_EXPIRES_IN` | `7d` | Token expiry — **lowercase d only** |
 | `CLIENT_URL` | `https://app.vercel.app` | Vercel URL for CORS — **must include https://** |
 | `DEV_SKIP_EMAIL` | `true` | Skip email verification (set `false` in production) |
-| `DATABASE_URL` | `postgresql://...` | Full Postgres connection string from Render |
+| `DATABASE_URL` | `postgresql://...` | Full connection string (Local or Supabase) |
+| `RAZORPAY_KEY_ID` | `rzp_live_...` | Razorpay Key ID |
+| `RAZORPAY_KEY_SECRET` | `...` | Razorpay Key Secret |
+| `RAZORPAY_WEBHOOK_SECRET` | `...` | Razorpay Webhook Secret |
+| `BREVO_LOGIN` | `user@email.com` | Brevo login email |
+| `BREVO_SMTP_KEY` | `xsmtpsib-...` | Brevo API key |
+| `SMTP_HOST` | `smtp.gmail.com` | Fallback SMTP host |
+| `SMTP_USER` | `user@email.com` | SMTP username |
+| `SMTP_PASS` | `...` | SMTP password |
+| `EMAIL_FROM` | `WipSom <...>` | Sender name and email |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | `{...}` | Service account credentials (JSON string) |
 | `SHEET_ID` | `1abc...` | Target Google Sheet ID |
 | `SHIPROCKET_EMAIL` | `user@email.com` | Shiprocket login email |
@@ -284,7 +319,7 @@ VITE_API_URL=https://your-render-app.onrender.com/api
 ### Frontend (Vercel)
 | Variable | Example | Description |
 |----------|---------|-------------|
-| `VITE_API_URL` | `https://backend.railway.app/api` | Backend API URL — **must end with /api, no trailing slash** |
+| `VITE_API_URL` | `https://backend.onrender.com/api` | Backend API URL — **must end with /api, no trailing slash** |
 
 ---
 
@@ -326,9 +361,16 @@ VITE_API_URL=https://your-render-app.onrender.com/api
 | PUT | `/api/about` | Admin | Edit about section |
 | GET | `/api/dashboard/customer` | User | Customer stats + charts |
 | GET | `/api/dashboard/admin` | Admin | Platform stats + charts |
-| POST | `/api/reviews` | User | Submit/update product review |
-| GET | `/api/reviews/product/:id` | Public | List reviews for a product |
-| GET | `/api/shipping/estimate?pincode=` | Public | Get shipping ETD from Shiprocket |
+| POST | `/api/auth/forgot-password` | Public | Send reset link |
+| POST | `/api/auth/reset-password` | Public | Set new password |
+| GET | `/api/wishlist` | User | Get wishlist |
+| POST | `/api/wishlist` | User | Add/remove from wishlist |
+| GET | `/api/addresses` | User | Get saved addresses |
+| POST | `/api/addresses` | User | Add new address |
+| POST | `/api/razorpay/order` | User | Create Razorpay order |
+| POST | `/api/razorpay/verify` | User | Verify payment signature |
+| GET | `/api/coupons` | Public | List active coupons |
+| POST | `/api/returns` | User | Request order return |
 | GET | `/api/health` | Public | Health check |
 
 ---

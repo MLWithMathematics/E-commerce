@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { Spinner, StarRating, Price, EmptyState } from '../components/ui'
+import SEO from '../components/SEO'
 
 const SORT_OPTIONS = [
   { value: '', label: 'Newest First' },
@@ -73,6 +74,11 @@ export default function ProductsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <SEO
+        title={filters.new_arrival ? 'New Arrivals' : filters.category ? `${filters.category} Products` : 'All Products'}
+        description={`Shop ${total} products on WipSom. ${filters.category ? `Browse our ${filters.category} collection.` : 'Find the best deals today.'}`}
+        canonical="/products"
+      />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
         <div>

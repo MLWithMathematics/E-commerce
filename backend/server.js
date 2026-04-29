@@ -1,98 +1,113 @@
 import dotenv from 'dotenv';
+dotenv.config();
+
+import http from 'http';
 import express from 'express';
 import cors from 'cors';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-// ── Local Route Imports (Must include .js extension) ──────────
-import authRoutes from './routes/auth.js';
-import productRoutes from './routes/products.js';
-import orderRoutes from './routes/orders.js';
-import { catRouter, payRouter, aboutRouter, cartRouter, dashRouter, reviewRouter, shippingRouter, wishlistRouter, couponRouter, addressRouter, returnRouter, uploadRouter } from './routes/misc.js';
+// ── Socket.io ─────────────────────────────────────────────────
+import { initSocket } from './socket/index.js';
 
-dotenv.config();
+// ── Jobs ──────────────────────────────────────────────────────
+import { startCartAbandonmentJob } from './jobs/cartAbandonment.js';
 
-// Recreate __dirname for ES Modules
+// ── Route imports ─────────────────────────────────────────────
+import authRoutes      from './routes/auth.js';
+import productRoutes   from './routes/products.js';
+import orderRoutes     from './routes/orders.js';
+import categoryRoutes  from './routes/categories.js';
+import paymentRoutes   from './routes/payments.js';
+import razorpayRoutes  from './routes/razorpay.js';
+import aboutRoutes     from './routes/about.js';
+import cartRoutes      from './routes/cart.js';
+import dashboardRoutes from './routes/dashboard.js';
+import reviewRoutes    from './routes/reviews.js';
+import shippingRoutes  from './routes/shipping.js';
+import wishlistRoutes  from './routes/wishlist.js';
+import couponRoutes    from './routes/coupons.js';
+import addressRoutes   from './routes/addresses.js';
+import returnRoutes    from './routes/returns.js';
+import uploadRoutes    from './routes/upload.js';
+
+import { globalErrorHandler } from './middleware/errorHandler.js';
+
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname  = dirname(__filename);
 
-const app = express();
+const app        = express();
+const httpServer = http.createServer(app);
 
-// ── CORS ─────────────────────────────────────────────────────
-// Reads CLIENT_URL from Render environment variables
+// ── Socket.io (must init before routes) ──────────────────────
+initSocket(httpServer);
+
+// ── CORS ──────────────────────────────────────────────────────
 const allowedOrigins = [
   'http://localhost:3000',
+  'http://localhost:5173',
   'http://localhost:5174',
-  process.env.CLIENT_URL // This will pull the Vercel URL you added to Render
-].filter(Boolean); // Safely ignores CLIENT_URL if it is undefined locally
+  process.env.CLIENT_URL,
+].filter(Boolean);
 
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl, or Postman)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('The CORS policy for this site does not allow access from the specified Origin.'));
-    }
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
 }));
 
-// ── Middleware ────────────────────────────────────────────────
+// ── Core middleware ───────────────────────────────────────────
+// NOTE: Razorpay webhook uses raw body (handled inside razorpay route itself)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-
-// ── Static uploads ────────────────────────────────────────────
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ── Routes ────────────────────────────────────────────────────
-app.use('/api/auth',       authRoutes);
-app.use('/api/products',   productRoutes);
-app.use('/api/orders',     orderRoutes);
-app.use('/api/categories', catRouter);
-app.use('/api/payments',   payRouter);
-app.use('/api/about',      aboutRouter);
-app.use('/api/cart',       cartRouter);
-app.use('/api/dashboard',  dashRouter);
-app.use('/api/reviews',    reviewRouter);
-app.use('/api/shipping',   shippingRouter);
-app.use('/api/wishlist',   wishlistRouter);
-app.use('/api/coupons',    couponRouter);
-app.use('/api/addresses',  addressRouter);
-app.use('/api/returns',    returnRouter);
-app.use('/api/upload',     uploadRouter);
+app.use('/api/auth',        authRoutes);
+app.use('/api/products',    productRoutes);
+app.use('/api/orders',      orderRoutes);
+app.use('/api/categories',  categoryRoutes);
+app.use('/api/payments',    paymentRoutes);
+app.use('/api/razorpay',    razorpayRoutes);
+app.use('/api/about',       aboutRoutes);
+app.use('/api/cart',        cartRoutes);
+app.use('/api/dashboard',   dashboardRoutes);
+app.use('/api/reviews',     reviewRoutes);
+app.use('/api/shipping',    shippingRoutes);
+app.use('/api/wishlist',    wishlistRoutes);
+app.use('/api/coupons',     couponRoutes);
+app.use('/api/addresses',   addressRoutes);
+app.use('/api/returns',     returnRoutes);
+app.use('/api/upload',      uploadRoutes);
 
-// ── Health check ─────────────────────────────────────────────
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+// ── Health & root ─────────────────────────────────────────────
+app.get('/api/health', (_req, res) =>
+  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+);
+app.get('/', (_req, res) =>
+  res.json({ message: 'WipSom API is running', version: '1.0.0' })
+);
 
-// ── Root ─────────────────────────────────────────────────────
-app.get('/', (req, res) => {
-  res.json({ message: 'WipSom API is running', version: '1.0.0' });
-});
+// ── 404 ───────────────────────────────────────────────────────
+app.use((_req, res) => res.status(404).json({ message: 'Route not found' }));
 
-// ── 404 ──────────────────────────────────────────────────────
-app.use((req, res) => {
-  res.status(404).json({ message: 'Route not found' });
-});
-
-// ── Error handler ─────────────────────────────────────────────
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({
-    message: err.message || 'Internal server error',
-  });
-});
+// ── Global error handler (must be last) ───────────────────────
+app.use(globalErrorHandler);
 
 // ── Start ─────────────────────────────────────────────────────
-// Render sets PORT automatically — must bind to 0.0.0.0
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅  WipSom API running on port ${PORT}`);
-  // FIXED: Changed from undefined variable to safely logging the array
-  console.log(`🌐  CORS allowed origins: ${allowedOrigins.join(', ')}`);
-  console.log(`⚙️   NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+httpServer.listen(PORT, '0.0.0.0', () => {
+  console.log(`\n✅  WipSom API     → http://localhost:${PORT}`);
+  console.log(`🔌  Socket.io      → ws://localhost:${PORT}`);
+  console.log(`🌐  CORS origins   → ${allowedOrigins.join(', ')}`);
+  console.log(`⚙️   NODE_ENV       → ${process.env.NODE_ENV || 'development'}\n`);
+
+  // Start cron jobs (only in production to avoid spam in dev)
+  if (process.env.NODE_ENV === 'production') {
+    startCartAbandonmentJob();
+  } else {
+    console.log('ℹ️   Cron jobs skipped in development (set NODE_ENV=production to enable)\n');
+  }
 });

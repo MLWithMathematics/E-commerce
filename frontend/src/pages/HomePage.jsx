@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import api from '../api/client'
 import { StarRating } from '../components/ui'
+import SEO from '../components/SEO'
 
 const STATS = [
   { icon: Users,      value: '50,000+', label: 'Happy Customers' },
@@ -41,6 +42,11 @@ export default function HomePage() {
 
   return (
     <div className="overflow-x-hidden">
+      <SEO
+        title="Shop Premium Products"
+        description="Discover 100,000+ products at WipSom. Fast shipping, easy returns, and great prices. Join 50,000+ happy customers."
+        canonical="/"
+      />
 
       {/* ══════════════════════════════════════════════════════
            HERO — Impressive multi-layer background
