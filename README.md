@@ -12,9 +12,7 @@
 | **Frontend** | https://e-commerce-ashen-omega.vercel.app |
 | **Backend API** |https://wipsom.onrender.com |
 
-**Demo Admin Login:**
-- Email: `admin@wipsom.com`
-- Password: `Admin@1234`
+**Please Wait for 50-sec to establish connection between Frontend to Backend**
 
 ---
 
