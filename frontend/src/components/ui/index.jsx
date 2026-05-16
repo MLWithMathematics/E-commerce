@@ -10,8 +10,9 @@ export const Spinner = ({ size = 'md', className = '' }) => {
 }
 
 export const PageLoader = () => (
-  <div className="flex h-[60vh] items-center justify-center">
+  <div className="flex flex-col h-[60vh] items-center justify-center gap-4">
     <Spinner size="lg" />
+    <p className="text-[#6b7280] font-medium text-sm animate-pulse">Wait for 50 sec backend Loading...</p>
   </div>
 )
 
