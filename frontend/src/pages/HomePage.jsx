@@ -5,7 +5,7 @@ import {
   ArrowRight, TrendingUp, Users, Package, Sparkles, Zap
 } from 'lucide-react'
 import api from '../api/client'
-import { StarRating } from '../components/ui'
+import { StarRating, PageLoader } from '../components/ui'
 import SEO from '../components/SEO'
 
 const STATS = [
@@ -33,11 +33,13 @@ const REVIEWS = [
 
 export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState([])
+  const [loadingProducts, setLoadingProducts] = useState(true)
 
   useEffect(() => {
     api.get('/products?featured=true&limit=4')
       .then(r => setFeaturedProducts(r.data.products || []))
       .catch(() => {})
+      .finally(() => setLoadingProducts(false))
   }, [])
 
   return (
@@ -288,7 +290,11 @@ export default function HomePage() {
       </section>
 
       {/* ── Featured Products ── */}
-      {featuredProducts.length > 0 && (
+      {loadingProducts ? (
+        <section className="py-16">
+          <PageLoader />
+        </section>
+      ) : featuredProducts.length > 0 && (
         <section className="py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-end justify-between mb-8">
