@@ -25,7 +25,8 @@ async function getMailer() {
     await t.verify();
     _mailer = t;
     return _mailer;
-  } catch {
+  } catch (err) {
+    console.error('❌  Cart Abandonment Mailer Verification Failed:', err.message || err);
     return null;
   }
 }

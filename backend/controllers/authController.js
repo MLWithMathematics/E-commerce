@@ -39,8 +39,10 @@ const getTransporter = async () => {
     await t.verify();
     transporter = t;
     if (useBrevo) console.log('✅  Brevo SMTP transporter ready');
+    else console.log('✅  SMTP transporter verified and ready');
     return transporter;
-  } catch {
+  } catch (err) {
+    console.error('❌  SMTP Transporter Verification Failed:', err.message || err);
     return null;
   }
 };
@@ -53,7 +55,10 @@ const sendVerificationEmail = async (email, name, token) => {
   console.log(`    ${verifyUrl}`);
   console.log('──────────────────────────────────────────────────\n');
 
-  if (!process.env.SMTP_HOST || !process.env.SMTP_USER) return;
+  if (!process.env.SMTP_HOST && !process.env.BREVO_SMTP_KEY) {
+    console.warn('⚠️  Skipping verification email: No SMTP_HOST or BREVO_SMTP_KEY configured.');
+    return;
+  }
 
   try {
     const mailer = await getTransporter();
