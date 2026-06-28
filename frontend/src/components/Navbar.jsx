@@ -211,9 +211,14 @@ export default function Navbar() {
                 <div className="relative ml-1">
                   <button onClick={() => setUserMenuOpen(p => !p)}
                     className="flex items-center gap-2 btn-ghost py-1.5 pr-2">
-                    <div className="w-7 h-7 bg-[#1a1f2e] rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                      {user.name?.[0]?.toUpperCase()}
-                    </div>
+                    {user.avatar_url ? (
+                      <img src={user.avatar_url} alt={user.name}
+                        className="w-7 h-7 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="w-7 h-7 bg-[#1a1f2e] rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0">
+                        {user.name?.[0]?.toUpperCase()}
+                      </div>
+                    )}
                     <span className="text-sm font-medium max-w-[90px] truncate">{user.name}</span>
                     <ChevronDown size={13} className={`transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
                   </button>

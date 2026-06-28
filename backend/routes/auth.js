@@ -2,6 +2,7 @@ import express from 'express';
 import { body } from 'express-validator';
 import * as ctrl from '../controllers/authController.js';
 import { authenticate } from '../middleware/auth.js';
+import { avatarUpload, processAndUploadAvatar } from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -26,6 +27,7 @@ router.post('/reset-password',  ctrl.resetPassword);
 // Authenticated routes
 router.get('/me', authenticate, ctrl.getMe);
 router.put('/me', authenticate, ctrl.updateMe);
+router.patch('/me/avatar', authenticate, avatarUpload.single('avatar'), processAndUploadAvatar, ctrl.uploadAvatar);
 router.put('/change-password', authenticate, ctrl.changePassword);
 
 export default router;

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { User, Lock, Save, MapPin, Plus, Pencil, Trash2, Check, Home, Briefcase, Star } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { User, Lock, Save, MapPin, Plus, Pencil, Trash2, Check, Home, Briefcase, Star, Camera, Loader2 } from 'lucide-react'
 import api from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
@@ -56,10 +56,14 @@ export default function ProfilePage() {
   const [pwForm, setPwForm]           = useState({ currentPassword:'', newPassword:'', confirm:'' })
   const [saving, setSaving]           = useState(false)
 
+  // Avatar upload
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const avatarInputRef = useRef(null)
+
   // Address book tab
   const [addresses, setAddresses]   = useState([])
   const [addrLoading, setAddrLoading] = useState(false)
-  const [addrModal, setAddrModal]   = useState(null)   // null | 'new' | address obj
+  const [addrModal, setAddrModal]   = useState(null)
   const [addrForm, setAddrForm]     = useState(EMPTY_ADDR)
   const [addrSaving, setAddrSaving] = useState(false)
   const [deleteAddr, setDeleteAddr] = useState(null)
@@ -72,6 +76,24 @@ export default function ProfilePage() {
   }
 
   useEffect(() => { if (tab === 'addresses') fetchAddresses() }, [tab])
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAvatarUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('avatar', file)
+      const { data } = await api.patch('/auth/me/avatar', fd)
+      updateUser({ avatar_url: data.avatar_url })
+      toast('Profile photo updated!', 'success')
+    } catch {
+      toast('Photo upload failed. Please try again.', 'error')
+    } finally {
+      setAvatarUploading(false)
+      e.target.value = ''
+    }
+  }
 
   const handleProfileSave = async () => {
     setSaving(true)
@@ -143,15 +165,56 @@ export default function ProfilePage() {
 
       {/* Avatar card */}
       <div className="card flex items-center gap-4">
-        <div className="w-16 h-16 bg-[#1a1f2e] rounded-2xl flex items-center justify-center text-white text-2xl font-bold font-display">
-          {user?.name?.[0]?.toUpperCase()}
+        {/* Clickable avatar */}
+        <div className="relative shrink-0 group">
+          <button
+            onClick={() => !avatarUploading && avatarInputRef.current?.click()}
+            disabled={avatarUploading}
+            className="relative w-16 h-16 rounded-2xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:ring-offset-2"
+            title="Change profile photo"
+          >
+            {user?.avatar_url ? (
+              <img
+                src={user.avatar_url}
+                alt={user?.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-[#1a1f2e] flex items-center justify-center text-white text-2xl font-bold font-display">
+                {user?.name?.[0]?.toUpperCase()}
+              </div>
+            )}
+            {/* Hover overlay */}
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              {avatarUploading
+                ? <Loader2 size={20} className="text-white animate-spin" />
+                : <Camera size={20} className="text-white" />
+              }
+            </div>
+          </button>
+          {/* Hidden file input */}
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handleAvatarChange}
+          />
         </div>
-        <div>
-          <h2 className="font-semibold text-lg">{user?.name}</h2>
-          <p className="text-sm text-[#6b7280]">{user?.email}</p>
+
+        <div className="flex-1 min-w-0">
+          <h2 className="font-semibold text-lg truncate">{user?.name}</h2>
+          <p className="text-sm text-[#6b7280] truncate">{user?.email}</p>
           <span className="text-xs capitalize bg-[#f59e0b]/10 text-[#d97706] font-medium px-2 py-0.5 rounded-full">
             {user?.role}
           </span>
+          <button
+            onClick={() => !avatarUploading && avatarInputRef.current?.click()}
+            disabled={avatarUploading}
+            className="mt-1 block text-xs text-[#6b7280] hover:text-[#f59e0b] transition-colors disabled:opacity-50"
+          >
+            {avatarUploading ? 'Uploading…' : user?.avatar_url ? 'Change photo' : 'Upload photo'}
+          </button>
         </div>
       </div>
 

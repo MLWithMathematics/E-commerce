@@ -78,9 +78,14 @@ export default function Sidebar({ collapsed = false }) {
       <div className="border-t border-gray-100 p-3">
         {!collapsed && (
           <div className="flex items-center gap-2 px-2 py-2 mb-1">
-            <div className="w-8 h-8 bg-[#1a1f2e] rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0">
-              {user?.name?.[0]?.toUpperCase()}
-            </div>
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt={user?.name}
+                className="w-8 h-8 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="w-8 h-8 bg-[#1a1f2e] rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0">
+                {user?.name?.[0]?.toUpperCase()}
+              </div>
+            )}
             <div className="min-w-0">
               <p className="text-sm font-semibold truncate">{user?.name}</p>
               <p className="text-[11px] text-[#6b7280] truncate">{user?.email}</p>

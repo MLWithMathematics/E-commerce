@@ -394,6 +394,21 @@ export const resetPassword = async (req, res) => {
   }
 };
 
+export const uploadAvatar = async (req, res) => {
+  if (!req.cloudinaryUrl)
+    return res.status(400).json({ message: 'No image uploaded.' });
+  try {
+    const { rows } = await db.query(
+      'UPDATE users SET avatar_url=$1, updated_at=NOW() WHERE id=$2 RETURNING id, name, email, role, phone, avatar_url',
+      [req.cloudinaryUrl, req.user.id]
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('uploadAvatar error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 export const changePassword = async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   try {
